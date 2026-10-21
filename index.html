@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>CCTV-04: VIRTUAL PIXEL OFFICE 2.5D (4 AGENTS HQ)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      image-rendering: pixelated;
+    }
+
+    body {
+      background-color: #030611;
+      color: #38ef7d;
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+      user-select: none;
+    }
+
+    /* Subtle CRT Film Grain */
+    body::before {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.01));
+      z-index: 100;
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+
+    /* Fullscreen High-DPI Interactive Canvas */
+    #officeCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+      cursor: grab;
+      background: radial-gradient(circle at 50% 50%, #0d1629 0%, #02040a 100%);
+    }
+
+    #officeCanvas:active {
+      cursor: grabbing;
+    }
+
+    /* Top Left Status HUD */
+    .cctv-top-left {
+      position: fixed;
+      top: 14px;
+      left: 18px;
+      z-index: 20;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hud-badge {
+      background: rgba(8, 14, 24, 0.88);
+      border: 1px solid rgba(56, 239, 125, 0.4);
+      backdrop-filter: blur(12px);
+      padding: 6px 14px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: #94a3b8;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      width: fit-content;
+    }
+
+    .rec-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: blink 1s infinite alternate;
+    }
+
+    @keyframes blink {
+      0% { opacity: 0.2; }
+      100% { opacity: 1; }
+    }
+
+    .cctv-substatus {
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      color: rgba(74, 222, 128, 0.95);
+      text-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+      line-height: 1.25;
+      background: rgba(4, 8, 16, 0.8);
+      padding: 3px 8px;
+      border-radius: 4px;
+      width: fit-content;
+    }
+
+    /* Top Right Camera Controls HUD */
+    .cctv-top-right {
+      position: fixed;
+      top: 14px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-btn {
+      background: rgba(8, 14, 24, 0.88);
+      border: 1px solid rgba(56, 239, 125, 0.4);
+      backdrop-filter: blur(8px);
+      color: #f8fafc;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .hud-btn:hover {
+      border-color: #38ef7d;
+      background: #0f2d22;
+      color: #38ef7d;
+    }
+
+    .nav-tip {
+      font-family: 'VT323', monospace;
+      font-size: 16px;
+      color: #94a3b8;
+      background: rgba(4, 8, 16, 0.8);
+      padding: 3px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    /* Floating Semi-Transparent Collapsible Command Dock (Bottom Center) */
+    .floating-dock-container {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      width: 92vw;
+      max-width: 1040px;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Collapsed Pill Button */
+    .dock-pill {
+      background: rgba(8, 14, 24, 0.85);
+      border: 1px solid rgba(56, 239, 125, 0.35);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
+      padding: 8px 20px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      color: #f8fafc;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .dock-pill:hover {
+      border-color: #38ef7d;
+      background: rgba(11, 20, 36, 0.95);
+      box-shadow: 0 8px 32px rgba(56, 239, 125, 0.2);
+    }
+
+    .pill-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+    }
+
+    .pill-agent-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'VT323', monospace;
+      font-size: 19px;
+      color: #94a3b8;
+    }
+
+    .pill-open-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      background: #15803d;
+      color: #ffffff;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid #22c55e;
+    }
+
+    /* Expanded Drawer Box */
+    .dock-drawer {
+      display: none;
+      background: rgba(6, 11, 20, 0.92);
+      border: 1px solid rgba(56, 239, 125, 0.4);
+      backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
+      border-radius: 12px;
+      padding: 12px 16px;
+      flex-direction: column;
+      gap: 10px;
+      height: 310px;
+    }
+
+    .floating-dock-container.open .dock-pill {
+      display: none;
+    }
+
+    .floating-dock-container.open .dock-drawer {
+      display: flex;
+    }
+
+    /* Drawer Header */
+    .drawer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1a293d;
+      padding-bottom: 8px;
+    }
+
+    .drawer-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      color: #38ef7d;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-close {
+      background: #131d2b;
+      border: 1px solid #24354a;
+      color: #cbd5e1;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-close:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    /* Drawer Grid */
+    .drawer-content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 440px 1fr;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 920px) {
+      .drawer-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .agent-tabs-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .agent-tab-item {
+      flex: 1;
+      background: #0d1624;
+      border: 1px solid #1f2f45;
+      border-radius: 6px;
+      padding: 5px 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .agent-tab-item:hover {
+      border-color: #38ef7d;
+    }
+
+    .agent-tab-item.active {
+      border-color: #38ef7d;
+      background: #0f2d22;
+    }
+
+    .tab-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      font-weight: bold;
+      color: #030712;
+    }
+
+    .tab-name {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: #f8fafc;
+    }
+
+    .tab-status {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      background: rgba(3, 7, 18, 0.75);
+      border: 1px solid #1e293b;
+      color: #38ef7d;
+      font-family: 'VT323', monospace;
+      font-size: 19px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      resize: none;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #38ef7d;
+    }
+
+    .chip-list {
+      display: flex;
+      gap: 5px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .chip-tag {
+      background: #0e1726;
+      border: 1px solid #1e2d42;
+      color: #94a3b8;
+      font-family: 'VT323', monospace;
+      font-size: 15px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .chip-tag:hover {
+      border-color: #38ef7d;
+      color: #38ef7d;
+    }
+
+    .btn-exec {
+      background: #15803d;
+      border: 1px solid #22c55e;
+      color: #ffffff;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      padding: 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-exec:hover {
+      background: #16a34a;
+    }
+
+    /* Terminal Panel */
+    .terminal-panel {
+      background: rgba(2, 5, 12, 0.85);
+      border: 1px solid #162438;
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .term-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #142030;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: #64748b;
+    }
+
+    .term-body {
+      flex: 1;
+      overflow-y: auto;
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      line-height: 1.25;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-stdout { color: #a7f3d0; }
+    .log-stderr { color: #f87171; }
+    .log-sys { color: #38bdf8; }
+    .log-lead { color: #818cf8; font-weight: bold; }
+    .log-coder { color: #fb923c; font-weight: bold; }
+    .log-infra { color: #f87171; font-weight: bold; }
+    .log-secu { color: #a3e635; font-weight: bold; }
+    .log-success { color: #4ade80; font-weight: bold; text-shadow: 0 0 6px rgba(74, 222, 128, 0.4); }
+  </style>
+</head>
+<body>
+
+  <!-- Fullscreen Interactive Canvas -->
+  <canvas id="officeCanvas"></canvas>
+
+  <!-- Top Left Status HUD -->
+  <div class="cctv-top-left">
+    <div class="hud-badge">
+      <div class="rec-dot"></div>
+      <span>CAM-04 · 2.5D DEV SQUAD HEADQUARTERS</span>
+    </div>
+    <div class="cctv-substatus" id="statusHeader">
+      CCTV LIVE: 4 AGENTS (LEADA, CODER, SECU, INFRAS)
+    </div>
+  </div>
+
+  <!-- Top Right Camera Controls HUD -->
+  <div class="cctv-top-right">
+    <span class="nav-tip">🖱️ SCROLL TO ZOOM · DRAG TO PAN</span>
+    <button class="hud-btn" onclick="zoomIn()" title="Zoom In">+</button>
+    <button class="hud-btn" onclick="zoomOut()" title="Zoom Out">-</button>
+    <button class="hud-btn" onclick="resetView()" title="Reset Kamera">⟲ RESET</button>
+    <div class="hud-badge" id="clockHUD" style="margin-left:4px;">00:00:00 UTC</div>
+  </div>
+
+  <!-- Floating Collapsible Command Dock (Bottom Center) -->
+  <div class="floating-dock-container" id="commandDock">
+    <div class="dock-pill" onclick="toggleDock(true)">
+      <div class="pill-left">
+        <span style="color:#38ef7d;">⚡ OMP COMMAND DOCK</span>
+        <div class="pill-agent-preview" id="pillPreview">
+          <span>● Leada: Meja</span>
+          <span>● Coder: Meja</span>
+          <span>● Secu: Meja</span>
+          <span>● Infras: Meja</span>
+        </div>
+      </div>
+      <div class="pill-open-btn">▲ BUKA DISPATCHER</div>
+    </div>
+
+    <div class="dock-drawer">
+      <div class="drawer-top">
+        <div class="drawer-title">
+          <span>⚡ AGENT COMMAND DISPATCHER (4 SQUAD MEMBERS)</span>
+        </div>
+        <button class="btn-close" onclick="toggleDock(false)">▼ TUTUP [ESC]</button>
+      </div>
+
+      <div class="drawer-content">
+        <div class="form-panel">
+          <!-- 4 Agent Selector Tabs -->
+          <div class="agent-tabs-row">
+            <div class="agent-tab-item active" id="tab-leada" onclick="selectAgent('leada')">
+              <div class="tab-avatar" style="background:#6366f1;">L</div>
+              <div>
+                <p class="tab-name">LEADA</p>
+                <p class="tab-status" id="tabStatus-leada">IDLE</p>
+              </div>
+            </div>
+
+            <div class="agent-tab-item" id="tab-coder" onclick="selectAgent('coder')">
+              <div class="tab-avatar" style="background:#ff6b00;">C</div>
+              <div>
+                <p class="tab-name">CODER</p>
+                <p class="tab-status" id="tabStatus-coder">IDLE</p>
+              </div>
+            </div>
+
+            <div class="agent-tab-item" id="tab-secu" onclick="selectAgent('secu')">
+              <div class="tab-avatar" style="background:#84cc16;">S</div>
+              <div>
+                <p class="tab-name">SECU</p>
+                <p class="tab-status" id="tabStatus-secu">IDLE</p>
+              </div>
+            </div>
+
+            <div class="agent-tab-item" id="tab-infras" onclick="selectAgent('infras')">
+              <div class="tab-avatar" style="background:#ef4444;">I</div>
+              <div>
+                <p class="tab-name">INFRAS</p>
+                <p class="tab-status" id="tabStatus-infras">IDLE</p>
+              </div>
+            </div>
+          </div>
+
+          <textarea id="taskInput" placeholder="Ketik tugas atau instruksi untuk OMP..."></textarea>
+
+          <div class="chip-list">
+            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Review arsitektur & sprint planning')">🧪 Sim Leader</button>
+            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Menulis fitur baru & implementasi logic')">🧪 Sim Coder</button>
+            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Security audit & pengetesan celah')">🧪 Sim Secu</button>
+            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Scaling server, Docker & deploy k8s')">🧪 Sim Infras</button>
+            <button class="chip-tag" onclick="setPrompt('omp ps')">⚡ omp ps</button>
+          </div>
+
+          <button class="btn-exec" onclick="dispatchTask()">
+            <span>▶ DISPATCH AGENT (RUN OMP)</span>
+          </button>
+        </div>
+
+        <div class="terminal-panel">
+          <div class="term-header">
+            <span>LIVE OMP TERMINAL STREAM</span>
+            <span style="cursor:pointer;" onclick="clearLogs()">[CLEAR]</span>
+          </div>
+          <div class="term-body" id="termLogs">
+[CCTV-04] Dev Squad Headquarters Ready.
+[SQUAD] 4 Anggota: LEADA (Lead), CODER (Code), SECU (Security), INFRAS (DevOps).
+[LAYOUT] Area kerja 2X lebih luas dengan kata-kata motivasi developer di tembok.
+[REST] Kamar tidur khusus ranjang tingkat 2 (Bunk Bed) di sayap istirahat.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========================================================================
+    // 1. HIGH-DPI CANVAS & EXACT 2X EXPANDED CENTERING FORMULA
+    // ========================================================================
+    const canvas = document.getElementById('officeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 2X Expanded Grid: 28 tiles wide, 16 tiles deep
+    const GRID_W = 28;
+    const GRID_H = 16;
+    const TILE_W = 44;
+    const TILE_H = 30;
+
+    // Room Bounding Box: X in [0, 1232], Y in [-78, 480]
+    const ROOM_MIN_X = 0;
+    const ROOM_MAX_X = GRID_W * TILE_W; // 1232 px
+    const ROOM_MIN_Y = -78; // top of back wall
+    const ROOM_MAX_Y = GRID_H * TILE_H; // 480 px (bottom of floor)
+
+    const ROOM_WIDTH = ROOM_MAX_X - ROOM_MIN_X; // 1232 px
+    const ROOM_HEIGHT = ROOM_MAX_Y - ROOM_MIN_Y; // 558 px
+    const ROOM_CENTER_X = (ROOM_MIN_X + ROOM_MAX_X) / 2; // 616 px (dead center X)
+    const ROOM_CENTER_Y = (ROOM_MIN_Y + ROOM_MAX_Y) / 2; // 201 px (dead center Y)
+
+    let dpr = window.devicePixelRatio || 1;
+    let zoom = 0.65;
+    let panX = 0;
+    let panY = 0;
+
+    let isDragging = false;
+    let startMouseX = 0;
+    let startMouseY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+
+    function resizeCanvas() {
+      dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      resetView();
+    }
+
+    // 100% DEAD-CENTER IN THE BROWSER VIEWPORT
+    function resetView() {
+      dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+      }
+
+      // Fit the entire 1232x558 office comfortably with 25% margin
+      const scaleW = (w * 0.75) / ROOM_WIDTH;
+      const scaleH = (h * 0.70) / ROOM_HEIGHT;
+      zoom = Math.min(scaleW, scaleH);
+      zoom = Math.max(0.35, Math.min(zoom, 0.85));
+
+      // Exact center alignment:
+      panX = Math.round(w / 2 - ROOM_CENTER_X * zoom);
+      panY = Math.round(h / 2 - ROOM_CENTER_Y * zoom);
+    }
+
+    // Initialize canvas sizing and centering immediately!
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', resizeCanvas);
+    function zoomIn() { applyZoom(1.18, window.innerWidth / 2, window.innerHeight / 2); }
+    function zoomOut() { applyZoom(0.85, window.innerWidth / 2, window.innerHeight / 2); }
+
+    function applyZoom(factor, cursorScreenX, cursorScreenY) {
+      const newZoom = Math.min(Math.max(zoom * factor, 0.25), 3.5);
+      panX = cursorScreenX - (cursorScreenX - panX) * (newZoom / zoom);
+      panY = cursorScreenY - (cursorScreenY - panY) * (newZoom / zoom);
+      zoom = newZoom;
+    }
+
+    // Precise Cursor-Centered Zoom
+    window.addEventListener('wheel', (e) => {
+      if (e.target.closest('#commandDock')) return;
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.10 : 0.90;
+      applyZoom(factor, e.clientX, e.clientY);
+    }, { passive: false });
+
+    // Smooth 1:1 Anchor Drag Panning
+    window.addEventListener('mousedown', (e) => {
+      if (e.target.closest('#commandDock') || e.target.closest('.cctv-top-right') || e.target.closest('button') || e.target.closest('textarea')) return;
+      if (e.button === 0) {
+        isDragging = true;
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        startPanX = panX;
+        startPanY = panY;
+        canvas.style.cursor = 'grabbing';
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = Math.round(startPanX + (e.clientX - startMouseX));
+      panY = Math.round(startPanY + (e.clientY - startMouseY));
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      canvas.style.cursor = 'grab';
+    });
+
+    canvas.addEventListener('dblclick', resetView);
+
+    function toScreen(gx, gy, gz = 0) {
+      return {
+        x: Math.round(gx * TILE_W),
+        y: Math.round(gy * TILE_H - gz * TILE_H)
+      };
+    }
+
+    // ========================================================================
+    // 2. PIXEL ART PRIMITIVES (WARM WOOD & CRISP CUBES)
+    // ========================================================================
+    function drawTile(gx, gy, colA, colB) {
+      const p = toScreen(gx, gy, 0);
+      ctx.fillStyle = (gx + gy) % 2 === 0 ? colA : colB;
+      ctx.fillRect(p.x, p.y, TILE_W, TILE_H);
+      ctx.strokeStyle = '#2d1a0e';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x, p.y, TILE_W, TILE_H);
+    }
+
+    function drawBox(gx, gy, w, l, h, colorTop, colorFront, colorSide, gz = 0) {
+      const p = toScreen(gx, gy, gz);
+      const pixelW = Math.round(w * TILE_W);
+      const pixelL = Math.round(l * TILE_H);
+      const pixelH = Math.round(h * TILE_H);
+
+      // Front Face
+      ctx.fillStyle = colorFront;
+      ctx.fillRect(p.x, p.y + pixelL - pixelH, pixelW, pixelH);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x, p.y + pixelL - pixelH, pixelW, pixelH);
+
+      // Top Face
+      ctx.fillStyle = colorTop;
+      ctx.fillRect(p.x, p.y - pixelH, pixelW, pixelL);
+      ctx.strokeRect(p.x, p.y - pixelH, pixelW, pixelL);
+
+      // Side Highlight
+      ctx.fillStyle = colorSide;
+      ctx.fillRect(p.x + pixelW - 3, p.y + pixelL - pixelH, 3, pixelH);
+    }
+
+    // Transparent Glass Partition Wall (Never blocks furniture view!)
+    function drawGlassWall(gx, gy, w, l, h) {
+      const p = toScreen(gx, gy, 0);
+      const pixelW = Math.round(w * TILE_W);
+      const pixelL = Math.round(l * TILE_H);
+      const pixelH = Math.round(h * TILE_H);
+
+      // Glass Front Face (Semi-transparent with subtle cyber cyan tint)
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+      ctx.fillRect(p.x, p.y + pixelL - pixelH, pixelW, pixelH);
+
+      // Glass Top Rail Face
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.fillRect(p.x, p.y - pixelH, pixelW, pixelL);
+
+      // Glass Frame Outline
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(p.x, p.y + pixelL - pixelH, pixelW, pixelH);
+      ctx.strokeRect(p.x, p.y - pixelH, pixelW, pixelL);
+
+      // Diagonal Glass Sheen Reflection Lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.beginPath();
+      for (let offset = 12; offset < pixelW; offset += 32) {
+        ctx.moveTo(p.x + offset, p.y + pixelL - 3);
+        ctx.lineTo(p.x + offset + 14, p.y + pixelL - pixelH + 3);
+      }
+      ctx.stroke();
+    }
+
+    // Doorway Frame with Open Passage and Glowing Room Badge
+    function drawDoorFrame(gx, gy, label, color) {
+      const p = toScreen(gx, gy, 0);
+      // Left and right door posts
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(p.x - 4, p.y - 48, 6, 48);
+      ctx.fillRect(p.x + 38, p.y - 48, 6, 48);
+
+      // Top lintel / architrave
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(p.x - 4, p.y - 54, 48, 7);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x - 4, p.y - 54, 48, 7);
+
+      // Door Label Badge
+      ctx.fillStyle = color;
+      ctx.font = '7px "Press Start 2P"';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, p.x + 20, p.y - 58);
+    }
+
+    // ========================================================================
+    // 3. DOOR ROUTING SYSTEM (AGENTS NEVER WALK THROUGH WALLS)
+    // ========================================================================
+    function getZone(gx, gy) {
+      if (gx <= 5.8 && gy >= 9.0) return 'DORM';
+      if (gx >= 18.0 && gy <= 6.8) return 'PANTRY';
+      if (gx >= 17.5 && gy >= 9.0) return 'GAME';
+      return 'HALLWAY';
+    }
+
+    function buildRoute(fromGx, fromGy, toGx, toGy, toGz = 0) {
+      const startZone = getZone(fromGx, fromGy);
+      const targetZone = getZone(toGx, toGy);
+      if (startZone === targetZone) {
+        return [{ gx: toGx, gy: toGy, gz: toGz }];
+      }
+      const pts = [];
+
+      // 1. Exit current room via door
+      if (startZone === 'DORM') {
+        pts.push({ gx: 4.6, gy: 10.5, gz: 0 }); // to door inside
+        pts.push({ gx: 6.8, gy: 10.5, gz: 0 }); // step through door outside
+      } else if (startZone === 'PANTRY') {
+        pts.push({ gx: 19.4, gy: 4.2, gz: 0 }); // to door inside
+        pts.push({ gx: 16.5, gy: 4.2, gz: 0 }); // step through door outside
+      } else if (startZone === 'GAME') {
+        pts.push({ gx: 18.8, gy: 10.5, gz: 0 }); // to door inside
+        pts.push({ gx: 16.0, gy: 10.5, gz: 0 }); // step through door outside
+      }
+
+      // 2. Central hallway hub (ensures clear diagonal transit without corner clipping)
+      pts.push({ gx: 13.0, gy: 7.5, gz: 0 });
+
+      // 3. Enter target room via door
+      if (targetZone === 'DORM') {
+        pts.push({ gx: 6.8, gy: 10.5, gz: 0 }); // to door outside
+        pts.push({ gx: 4.6, gy: 10.5, gz: 0 }); // step through door inside
+      } else if (targetZone === 'PANTRY') {
+        pts.push({ gx: 16.5, gy: 4.2, gz: 0 }); // to door outside
+        pts.push({ gx: 19.4, gy: 4.2, gz: 0 }); // step through door inside
+      } else if (targetZone === 'GAME') {
+        pts.push({ gx: 16.0, gy: 10.5, gz: 0 }); // to door outside
+        pts.push({ gx: 18.8, gy: 10.5, gz: 0 }); // step through door inside
+      }
+
+      // 4. Final target destination
+      pts.push({ gx: toGx, gy: toGy, gz: toGz });
+      return pts;
+    }
+
+    function setAgentDestination(agent, gx, gy, gz = 0, bubble = null) {
+      agent.waypoints = buildRoute(agent.gx, agent.gy, gx, gy, gz);
+      if (agent.waypoints.length > 0) {
+        const nextPt = agent.waypoints[0];
+        agent.targetGx = nextPt.gx;
+        agent.targetGy = nextPt.gy;
+        agent.targetGz = nextPt.gz || 0;
+      }
+      if (bubble) agent.bubble = bubble;
+    }
+    // ========================================================================
+    // 3. 4-AGENT DEFINITIONS (LEADA, CODER, SECU, INFRAS)
+    // ========================================================================
+    const WORKBENCH_GY = 3.2;
+    const SEAT_LEADA  = { gx: 4.0,  gy: WORKBENCH_GY };
+    const SEAT_CODER  = { gx: 6.0,  gy: WORKBENCH_GY };
+    const SEAT_SECU   = { gx: 8.0,  gy: WORKBENCH_GY };
+    const SEAT_INFRAS = { gx: 10.0, gy: WORKBENCH_GY };
+    // Dedicated Rest Room (Bunk Bed 2 Tingkat)
+    const BUNK_BED_BOTTOM = { gx: 2.2, gy: 12.2, isBed: true, level: 'bottom', bubble: '💤' };
+    const BUNK_BED_TOP    = { gx: 2.2, gy: 12.2, isBed: true, level: 'top', gz: 1.15, bubble: '💤' };
+
+    const agentSprites = {
+      leada: {
+        id: 'leada',
+        name: 'LEADA',
+        model: 'leader',
+        color: '#6366f1', // Royal Indigo Blazer
+        pantColor: '#1e293b',
+        hairColor: '#f8fafc', // Silver swept hair
+        tieColor: '#fbbf24', // Gold tie
+        gx: SEAT_LEADA.gx, gy: SEAT_LEADA.gy, gz: 0,
+        deskGx: SEAT_LEADA.gx, deskGy: SEAT_LEADA.gy,
+        targetGx: SEAT_LEADA.gx, targetGy: SEAT_LEADA.gy, targetGz: 0,
+        waypoints: [],
+        state: 'idle',
+        bubble: '💡',
+        speed: 0.038,
+        stepDist: 0,
+        walkFrame: 0,
+        nextRoamTick: 160,
+      },
+      coder: {
+        id: 'coder',
+        name: 'CODER',
+        model: 'coder',
+        color: '#ff6b00', // Bright Orange Hoodie
+        pantColor: '#0f172a',
+        hairColor: '#0f172a', // Spiky black
+        headphoneColor: '#00e5ff', // Cyan headphones
+        gx: SEAT_CODER.gx, gy: SEAT_CODER.gy, gz: 0,
+        deskGx: SEAT_CODER.gx, deskGy: SEAT_CODER.gy,
+        targetGx: SEAT_CODER.gx, targetGy: SEAT_CODER.gy, targetGz: 0,
+        waypoints: [],
+        state: 'idle',
+        bubble: '💻',
+        speed: 0.040,
+        stepDist: 0,
+        walkFrame: 0,
+        nextRoamTick: 240,
+      },
+      secu: {
+        id: 'secu',
+        name: 'SECU',
+        model: 'security',
+        color: '#84cc16', // Olive Green Trench Coat
+        pantColor: '#451a03',
+        hairColor: '#451a03',
+        hatColor: '#854d0e', // Fedora hat
+        gx: SEAT_SECU.gx, gy: SEAT_SECU.gy, gz: 0,
+        deskGx: SEAT_SECU.gx, deskGy: SEAT_SECU.gy,
+        targetGx: SEAT_SECU.gx, targetGy: SEAT_SECU.gy, targetGz: 0,
+        waypoints: [],
+        state: 'idle',
+        bubble: '🔍',
+        speed: 0.036,
+        stepDist: 0,
+        walkFrame: 0,
+        nextRoamTick: 320,
+      },
+      infras: {
+        id: 'infras',
+        name: 'INFRAS',
+        model: 'infra',
+        color: '#ef4444', // Crimson Tech Workwear Vest
+        pantColor: '#334155', // Charcoal workpants
+        hairColor: '#0284c7', // Tech cap / visor
+        beltColor: '#eab308', // Utility toolbelt
+        gx: SEAT_INFRAS.gx, gy: SEAT_INFRAS.gy, gz: 0,
+        deskGx: SEAT_INFRAS.gx, deskGy: SEAT_INFRAS.gy,
+        targetGx: SEAT_INFRAS.gx, targetGy: SEAT_INFRAS.gy, targetGz: 0,
+        waypoints: [],
+        state: 'idle',
+        bubble: '⚡',
+        speed: 0.039,
+        stepDist: 0,
+        walkFrame: 0,
+        nextRoamTick: 400,
+      }
+    };
+
+    const roamSpots = [
+      { name: 'Tidur di ranjang bawah dorm', gx: BUNK_BED_BOTTOM.gx, gy: BUNK_BED_BOTTOM.gy, gz: 0, isBed: true, bubble: '💤' },
+      { name: 'Tidur di ranjang atas dorm', gx: BUNK_BED_TOP.gx, gy: BUNK_BED_TOP.gy, gz: 1.15, isBed: true, bubble: '💤' },
+      { name: 'Main Biliar di Game Room', gx: 20.0, gy: 11.5, gz: 0, bubble: '🎱' },
+      { name: 'Main PS di Sofa Game Room', gx: 24.8, gy: 12.2, gz: 0, bubble: '🎮' },
+      { name: 'Seduh kopi di Pantry', gx: 21.8, gy: 1.8, gz: 0, bubble: '☕' },
+      { name: 'Ambil minum galon di Pantry', gx: 23.4, gy: 1.8, gz: 0, bubble: '💧' },
+      { name: 'Santai di meja makan Pantry', gx: 22.5, gy: 4.6, gz: 0, bubble: '🥪' },
+      { name: 'Diskusi whiteboard arsitektur', gx: 12.5, gy: 2.4, gz: 0, bubble: '💡' },
+      { name: 'Inspeksi server rack IT', gx: 1.8, gy: 2.0, gz: 0, bubble: '⚡' },
+      { name: 'Patroli koridor kantor', gx: 10.5, gy: 7.5, gz: 0, bubble: '🚶' }
+    ];
+
+    // ========================================================================
+    // 4. DRAWING THE EXPANDED 2X OFFICE WORLD & WALL QUOTES
+    function drawOfficeWorld(tick) {
+      // 1. Zoned Parquet / Carpet Flooring (28x16 Grid)
+      for (let x = 0; x < GRID_W; x++) {
+        for (let y = 0; y < GRID_H; y++) {
+          if (x <= 5 && y >= 9) {
+            // Dorm / Rest Room Floor (Cozy dark wood parquet)
+            drawTile(x, y, '#422817', '#351f12');
+          } else if (x >= 18 && y <= 6) {
+            // Dedicated Pantry Room Floor (Modern slate kitchen tile)
+            drawTile(x, y, '#334155', '#1e293b');
+          } else if (x >= 18 && y >= 9) {
+            // Dedicated Entertainment Room Floor (Royal velvet purple lounge carpet)
+            // STRICTLY INSIDE ROOM BOUNDS: NO COLOR BLEEDING OUTSIDE!
+            drawTile(x, y, '#2e1065', '#1e1b4b');
+          } else {
+            // Main Work Area & Central Hallway (Rich Golden Oak Parquet)
+            drawTile(x, y, '#543924', '#462e1c');
+          }
+        }
+      }
+
+      // 2. Tall Back Wall (Upper Horizon, gy = 0)
+      const wallH = 92;
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, -wallH, GRID_W * TILE_W, wallH);
+      // Wall panel stripes
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.lineWidth = 1;
+      for (let wy = -wallH + 20; wy < 0; wy += 22) {
+        ctx.beginPath();
+        ctx.moveTo(0, wy);
+        ctx.lineTo(GRID_W * TILE_W, wy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, -wallH, GRID_W * TILE_W, 12); // Top crown molding
+      ctx.fillStyle = '#1a1008';
+      ctx.fillRect(0, -4, GRID_W * TILE_W, 4); // Skirting board
+
+      // Wall Lights
+      for (let w = 2; w < GRID_W; w += 5) {
+        const lx = w * TILE_W;
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(lx, -66, 10, 6);
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+        ctx.beginPath();
+        ctx.arc(lx + 5, -60, 26, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ======================================================================
+      // DEKOR KATA-KATA DI TEMBOK (NEON BANNER RATARAPI)
+      // ======================================================================
+      ctx.save();
+      // Quote 1 Banner: Linus Torvalds Quote directly above workstations (x: 2.8 .. 11)
+      const q1X = 2.8 * TILE_W;
+      const q1Y = -56;
+      const q1W = 340;
+      const q1H = 26;
+      // Dark transparent acrylic plaque
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(q1X, q1Y, q1W, q1H);
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(q1X, q1Y, q1W, q1H);
+
+      ctx.font = 'bold 8px "Press Start 2P", monospace';
+      ctx.fillStyle = '#10b981'; // Neon emerald glow
+      ctx.shadowColor = '#10b981';
+      ctx.shadowBlur = 6;
+      ctx.textAlign = 'center';
+      ctx.fillText('"TALK IS CHEAP. SHOW ME THE CODE."', q1X + q1W / 2, q1Y + 16);
+
+      // Quote 2 Banner: Dev Squad Motto directly above whiteboard (x: 11.6 .. 14.8)
+      const q2X = 11.6 * TILE_W;
+      const q2Y = -56;
+      const q2W = 140;
+      const q2H = 26;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(q2X, q2Y, q2W, q2H);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(q2X, q2Y, q2W, q2H);
+
+      ctx.font = 'bold 7px "Press Start 2P", monospace';
+      ctx.fillStyle = '#38bdf8'; // Neon cyan glow
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 5;
+      ctx.fillText('CODE · SECURE · SHIP', q2X + q2W / 2, q2Y + 16);
+      ctx.restore();
+
+      // Whiteboard (Monitor/Papan Putih Arsitektur) beside workbench
+      const wbX = 11.6 * TILE_W;
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(wbX, -28, 140, 26);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(wbX, -28, 140, 26);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(wbX + 10, -22, 44, 3);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(wbX + 68, -16, 50, 3);
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(wbX + 22, -10, 36, 3);
+      // Server Bay in Top-Left (x: 0.8 .. 2.2, y: 0.5)
+      drawBox(0.8, 0.5, 1.1, 0.9, 1.8, '#1e293b', '#0f172a', '#334155');
+      drawBox(2.0, 0.5, 1.1, 0.9, 1.8, '#1e293b', '#0f172a', '#334155');
+      const leds = [
+        { x: 1.0 * TILE_W, y: 0.8 * TILE_H - 30, c: '#22c55e' },
+        { x: 1.0 * TILE_W, y: 0.8 * TILE_H - 18, c: '#ef4444' },
+        { x: 2.2 * TILE_W, y: 0.8 * TILE_H - 30, c: '#38bdf8' },
+        { x: 2.2 * TILE_W, y: 0.8 * TILE_H - 18, c: '#f59e0b' },
+      ];
+      leds.forEach((led, i) => {
+        const on = (Math.floor(tick / (18 + i * 8)) % 2 === 0);
+        ctx.fillStyle = on ? led.c : '#050a12';
+        ctx.fillRect(led.x, led.y, 5, 4);
+      });
+
+      // ======================================================================
+      // MEJA KERJA DIPERKUAT & DIPOKOKKAN KE KIRI (DEKAT SERVER)
+      // ======================================================================
+      // Continuous long wooden workbench across gx: 3.2 .. 11.2, gy: 2.4
+      drawBox(3.2, 2.4, 8.0, 1.0, 0.9, '#b45309', '#78350f', '#593207');
+
+      const stations = [
+        { name: 'Leada',  gx: 4.0,  gy: 2.4, agent: agentSprites.leada,  screenColor: '#0369a1' },
+        { name: 'Coder',  gx: 6.0,  gy: 2.4, agent: agentSprites.coder,  screenColor: '#c2410c' },
+        { name: 'Secu',   gx: 8.0,  gy: 2.4, agent: agentSprites.secu,   screenColor: '#047857' },
+        { name: 'Infras', gx: 10.0, gy: 2.4, agent: agentSprites.infras, screenColor: '#b91c1c' },
+      ];
+
+      stations.forEach(st => {
+        const mX = st.gx * TILE_W;
+        const mY = st.gy * TILE_H;
+
+        // Dual Monitors on desk
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(mX - 16, mY - 36, 26, 18);
+        ctx.fillRect(mX + 13, mY - 36, 26, 18);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(mX - 16, mY - 36, 26, 18);
+        ctx.strokeRect(mX + 13, mY - 36, 26, 18);
+
+        const isWorking = st.agent.state === 'working';
+        if (isWorking) {
+          ctx.fillStyle = st.screenColor; // Signature screen color
+          ctx.fillRect(mX - 14, mY - 34, 22, 14);
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillRect(mX - 12, mY - 31, 14, 2);
+          ctx.fillRect(mX - 12, mY - 27, 18, 2);
+          ctx.fillRect(mX - 12, mY - 23, 10, 2);
+
+          ctx.fillStyle = '#052e16'; // Terminal Matrix on right screen
+          ctx.fillRect(mX + 15, mY - 34, 22, 14);
+          ctx.fillStyle = '#4ade80';
+          ctx.fillRect(mX + 17, mY - 31, 16, 2);
+          ctx.fillRect(mX + 17, mY - 27, 12, 2);
+          if (Math.floor(tick / 30) % 2 === 0) {
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(mX + 31, mY - 23, 3, 3);
+          }
+        } else {
+          ctx.fillStyle = '#020617';
+          ctx.fillRect(mX - 14, mY - 34, 22, 14);
+          ctx.fillRect(mX + 15, mY - 34, 22, 14);
+        }
+
+        // Keyboard & Mouse
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(mX - 12, mY - 8, 24, 8);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(mX + 16, mY - 7, 5, 6);
+
+        // Chair behind desk
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(mX - 12, mY + 6, 24, 16);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(mX - 10, mY - 2, 20, 10);
+
+        // Active typing hands when working
+        if (isWorking) {
+          const hStep = (Math.floor(tick / 14) % 2 === 0) ? 2 : -2;
+          ctx.fillStyle = '#fed7aa';
+          ctx.fillRect(mX - 8, mY - 10 + hStep, 6, 5);
+          ctx.fillRect(mX + 2, mY - 10 - hStep, 6, 5);
+        }
+      });
+
+      // ======================================================================
+      // RUANG PANTRY KHUSUS (TRANSPARENT GLASS WALLS & PINTU MASUK)
+      // ======================================================================
+      // Glass Partitions Pantry
+      drawGlassWall(18.0, 0, 0.25, 3.2, 1.6); // Dinding kiri atas
+      drawGlassWall(18.0, 5.2, 0.25, 1.6, 1.6); // Dinding kiri bawah
+      drawGlassWall(18.0, 6.8, 9.8, 0.25, 1.6); // Dinding bawah horizontal
+      drawDoorFrame(18.0, 3.8, '[PANTRY]', '#f59e0b'); // Pintu masuk pantry
+
+      // Kulkas 2 Pintu dengan Handle Chrome
+      drawBox(18.6, 0.4, 1.2, 1.0, 1.9, '#cbd5e1', '#94a3b8', '#64748b');
+      const frP = toScreen(18.6, 0.4, 1.9);
+      const frW = Math.round(1.2 * TILE_W);
+      // Pintu Atas (Freezer)
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(frP.x + 3, frP.y + 4, frW - 6, 20);
+      ctx.strokeStyle = '#475569';
+      ctx.strokeRect(frP.x + 3, frP.y + 4, frW - 6, 20);
+      ctx.fillStyle = '#0f172a'; // Handle atas
+      ctx.fillRect(frP.x + frW - 8, frP.y + 8, 3, 11);
+
+      // Pintu Bawah (Chiller)
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(frP.x + 3, frP.y + 27, frW - 6, 28);
+      ctx.strokeRect(frP.x + 3, frP.y + 27, frW - 6, 28);
+      ctx.fillStyle = '#0f172a'; // Handle bawah
+      ctx.fillRect(frP.x + frW - 8, frP.y + 32, 3, 16);
+
+      // Kitchen Countertop Panjang
+      drawBox(20.0, 0.5, 5.8, 0.9, 1.0, '#a16207', '#78350f', '#593207');
+
+      // Kompor 2 Tungku Induksi / Gas di Countertop
+      const kpP = toScreen(20.2, 0.5, 1.0);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(kpP.x, kpP.y - 12, 32, 18);
+      ctx.strokeStyle = '#475569';
+      ctx.strokeRect(kpP.x, kpP.y - 12, 32, 18);
+      // 2 Cincin Tungku Menyala Merah
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(kpP.x + 9, kpP.y - 3, 5, 0, Math.PI * 2);
+      ctx.arc(kpP.x + 23, kpP.y - 3, 5, 0, Math.PI * 2);
+      ctx.fill();
+      // Wajan Penggorengan di atas tungku
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(kpP.x + 9, kpP.y - 3, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(kpP.x + 13, kpP.y - 4, 6, 2);
+
+      // Mesin Kopi Espresso dengan Uap Panas
+      const cmX = 21.8 * TILE_W;
+      const cmY = 0.5 * TILE_H - 10;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(cmX, cmY - 16, 20, 16);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(cmX + 3, cmY - 5, 4, 4);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(cmX + 9, cmY - 8, 8, 3);
+      if (Math.floor(tick / 16) % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillRect(cmX + 8, cmY - 24 - (Math.floor(tick / 8) % 6), 4, 4);
+      }
+
+      // Dispenser Galon Air Mineral
+      const wcX = 23.4 * TILE_W;
+      drawBox(23.2, 0.5, 0.9, 0.9, 1.2, '#f8fafc', '#cbd5e1', '#94a3b8');
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(wcX + 16, 0.5 * TILE_H - 24, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wastafel Dapur di Ujung Counter
+      const snkP = toScreen(24.8, 0.5, 1.0);
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(snkP.x, snkP.y - 10, 20, 14);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.strokeRect(snkP.x, snkP.y - 10, 20, 14);
+      ctx.fillStyle = '#cbd5e1'; // Kran air chrome
+      ctx.fillRect(snkP.x + 8, snkP.y - 16, 4, 6);
+
+      // Meja Makan & 4 Kursi di Ruang Pantry
+      drawBox(21.2, 3.6, 2.6, 1.4, 0.75, '#b45309', '#78350f', '#593207');
+      const dtP = toScreen(21.2, 3.6, 0.75);
+      const dtW = Math.round(2.6 * TILE_W);
+      const dtL = Math.round(1.4 * TILE_H);
+      // Table Runner
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(dtP.x + 12, dtP.y - dtL, dtW - 24, dtL);
+      // 2 Kursi Atas
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(dtP.x + 14, dtP.y - dtL - 10, 14, 10);
+      ctx.fillRect(dtP.x + dtW - 28, dtP.y - dtL - 10, 14, 10);
+      // 2 Kursi Bawah
+      ctx.fillRect(dtP.x + 14, dtP.y + 4, 14, 12);
+      ctx.fillRect(dtP.x + dtW - 28, dtP.y + 4, 14, 12);
+
+      // ======================================================================
+      // RUANG HIBURAN KHUSUS (TRANSPARENT GLASS WALLS, PINTU, MEJA BILLIARD & PS)
+      // ======================================================================
+      // Glass Partitions Ruang Hiburan
+      drawGlassWall(17.5, 9.0, 10.3, 0.25, 1.6); // Dinding atas horizontal
+      drawGlassWall(17.5, 9.0, 0.25, 1.4, 1.6); // Dinding kiri atas
+      drawGlassWall(17.5, 12.0, 0.25, 4.0, 1.6); // Dinding kiri bawah
+      drawDoorFrame(17.5, 10.5, '[GAME LOUNGE]', '#a855f7'); // Pintu masuk lounge
+
+      // 1. MEJA BILLIARD PROPORSIONAL (BOLA-BOLA BILIAR BERSIH)
+      const bilX = 18.6;
+      const bilY = 11.2;
+      drawBox(bilX, bilY, 2.8, 1.8, 0.85, '#15803d', '#451a03', '#78350f');
+      const bp = toScreen(bilX, bilY, 0.85);
+      const bW = Math.round(2.8 * TILE_W);
+      const bL = Math.round(1.8 * TILE_H);
+      // Green Felt
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(bp.x + 6, bp.y - bL + 6, bW - 12, bL - 12);
+
+      // 6 Billiard Pockets (Lubang Hitam di 4 Sudut & 2 Tengah)
+      ctx.fillStyle = '#0f172a';
+      const pockets = [
+        { x: bp.x + 8, y: bp.y - bL + 8 },
+        { x: bp.x + bW / 2, y: bp.y - bL + 8 },
+        { x: bp.x + bW - 8, y: bp.y - bL + 8 },
+        { x: bp.x + 8, y: bp.y - 8 },
+        { x: bp.x + bW / 2, y: bp.y - 8 },
+        { x: bp.x + bW - 8, y: bp.y - 8 },
+      ];
+      pockets.forEach(pkt => {
+        ctx.beginPath();
+        ctx.arc(pkt.x, pkt.y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Bola-Bola Biliar Warna-Warni & Bola Putih (Tanpa Garis Stik)
+      const balls = [
+        { x: bp.x + bW * 0.72, y: bp.y - bL * 0.50, c: '#ffffff' }, // White Cue Ball
+        { x: bp.x + bW * 0.40, y: bp.y - bL * 0.50, c: '#ef4444' }, // Red Ball
+        { x: bp.x + bW * 0.35, y: bp.y - bL * 0.44, c: '#eab308' }, // Yellow Ball
+        { x: bp.x + bW * 0.35, y: bp.y - bL * 0.56, c: '#3b82f6' }, // Blue Ball
+        { x: bp.x + bW * 0.30, y: bp.y - bL * 0.38, c: '#a855f7' }, // Purple Ball
+        { x: bp.x + bW * 0.30, y: bp.y - bL * 0.50, c: '#0f172a' }, // 8-Ball
+        { x: bp.x + bW * 0.30, y: bp.y - bL * 0.62, c: '#f97316' }, // Orange Ball
+      ];
+      balls.forEach(b => {
+        ctx.fillStyle = b.c;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 3.0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      });
+      // 2. PLAYSTATION SETUP PROPORSIONAL
+      const tvX = 24.0;
+      const tvY = 9.5;
+      drawBox(tvX, tvY, 2.4, 0.8, 0.7, '#1e293b', '#0f172a', '#334155');
+      const tvP = toScreen(tvX, tvY, 0.7);
+      const tvPixelW = Math.round(2.4 * TILE_W);
+
+      // TV Layar Lebar 4K
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(tvP.x + 4, tvP.y - 48, tvPixelW - 8, 32);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(tvP.x + 4, tvP.y - 48, tvPixelW - 8, 32);
+
+      // Game Cyberpunk Balap Mobil Pixel Bergerak
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(tvP.x + 6, tvP.y - 46, tvPixelW - 12, 28);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(tvP.x + 16, tvP.y - 46, tvPixelW - 32, 28);
+      const carOffset = Math.sin(tick * 0.1) * 6;
+      ctx.fillStyle = '#ef4444'; // Mobil merah
+      ctx.fillRect(tvP.x + tvPixelW / 2 - 3 + carOffset, tvP.y - 32, 7, 10);
+      ctx.fillStyle = '#67e8f9';
+      ctx.fillRect(tvP.x + tvPixelW / 2 - 2 + carOffset, tvP.y - 29, 5, 3);
+
+      // Konsol PlayStation Hitam dengan Garis LED Cyan
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(tvP.x + 8, tvP.y - 12, 22, 7);
+      ctx.fillStyle = '#00f5ff';
+      ctx.shadowColor = '#00f5ff';
+      ctx.shadowBlur = 5;
+      ctx.fillRect(tvP.x + 10, tvP.y - 10, 18, 2);
+      ctx.shadowBlur = 0;
+
+      // 2 Stik Wireless Gamepad di Meja
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(tvP.x + 36, tvP.y - 10, 7, 4);
+      ctx.fillRect(tvP.x + 46, tvP.y - 10, 7, 4);
+
+      // Sofa Empuk Nyaman untuk Main PS
+      drawBox(24.0, 12.0, 2.4, 1.2, 0.65, '#991b1b', '#7f1d1d', '#581c1c');
+      const sofaP = toScreen(24.0, 12.0, 0.65);
+      ctx.fillStyle = '#f8fafc'; // Bantal sofa
+      ctx.fillRect(sofaP.x + 6, sofaP.y - 12, 12, 8);
+      ctx.fillRect(sofaP.x + tvPixelW - 18, sofaP.y - 12, 12, 8);
+
+      // Mesin Arcade Retro di Pojok
+      drawBox(26.6, 10.5, 1.1, 1.1, 1.8, '#3b0764', '#1e1b4b', '#0f172a');
+      const arcX = 26.6 * TILE_W;
+      const arcY = 10.5 * TILE_H - 20;
+      ctx.fillStyle = (Math.floor(tick / 24) % 2 === 0) ? '#f43f5e' : '#38bdf8';
+      ctx.fillRect(arcX + 4, arcY - 20, 20, 18);
+
+      // ======================================================================
+      // RUANGAN KHUSUS ISTIRAHAT (TRANSPARENT GLASS WALLS, PINTU & BUNK BED)
+      // ======================================================================
+      // Glass Partitions Dorm
+      drawGlassWall(0, 9.0, 5.8, 0.25, 1.6); // Dinding atas horizontal
+      drawGlassWall(5.8, 9.0, 0.25, 1.4, 1.6); // Dinding kanan atas
+      drawGlassWall(5.8, 12.0, 0.25, 4.0, 1.6); // Dinding kanan bawah
+      drawDoorFrame(5.8, 10.5, '[REST DORM]', '#f59e0b'); // Pintu masuk dorm
+
+      // Bunk Bed 2 Tingkat
+      const bx = 1.2;
+      const by = 11.0;
+      drawBox(bx, by, 0.2, 0.2, 1.9, '#78350f', '#451a03', '#92400e');
+      drawBox(bx + 2.4, by, 0.2, 0.2, 1.9, '#78350f', '#451a03', '#92400e');
+      drawBox(bx, by + 2.0, 0.2, 0.2, 1.9, '#78350f', '#451a03', '#92400e');
+      drawBox(bx + 2.4, by + 2.0, 0.2, 0.2, 1.9, '#78350f', '#451a03', '#92400e');
+
+      // Bottom Bunk
+      drawBox(bx, by, 2.6, 2.1, 0.45, '#0284c7', '#0369a1', '#075985');
+      const bpBed = toScreen(bx + 0.2, by + 0.3, 0.45);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(bpBed.x, bpBed.y - 8, 22, 12);
+
+      // Top Bunk
+      drawBox(bx, by, 2.6, 2.1, 0.4, '#10b981', '#059669', '#047857', 1.2);
+      const tp = toScreen(bx + 0.2, by + 0.3, 1.6);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(tp.x, tp.y - 8, 22, 12);
+
+      // Ladder Rungs
+      const ladP = toScreen(bx + 2.6, by + 0.6, 0.2);
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(ladP.x + 4, ladP.y);
+      ctx.lineTo(ladP.x + 4, ladP.y - 42);
+      ctx.stroke();
+      for (let r = 0; r < 4; r++) {
+        ctx.beginPath();
+        ctx.moveTo(ladP.x, ladP.y - 8 - r * 10);
+        ctx.lineTo(ladP.x + 8, ladP.y - 8 - r * 10);
+        ctx.stroke();
+      }
+
+      // Nightstand Table in Bedroom
+      drawBox(4.0, 11.2, 0.8, 0.8, 0.6, '#92400e', '#78350f', '#593207');
+      const nP = toScreen(4.3, 11.4, 0.6);
+      ctx.fillStyle = '#fde047'; // Night lamp
+      ctx.fillRect(nP.x - 4, nP.y - 12, 8, 8);
+    }
+
+    // ========================================================================
+    // 5. ANIMATED CHARACTERS WITH SHARP COUNTER-SCALED NAME TAGS
+    // ========================================================================
+    function drawAgent(agent, tick) {
+      const p = toScreen(agent.gx, agent.gy, agent.gz);
+      const isWalking = agent.state === 'walking';
+      const isWorking = agent.state === 'working';
+      const isSleeping = agent.state === 'sleeping';
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      // STRICTLY ZERO HORIZONTAL FLIP: Characters are always drawn facing forward!
+
+      // 1. SLEEPING ON BUNK BED
+      if (isSleeping) {
+        ctx.fillStyle = agent.color;
+        ctx.fillRect(8, -8, 44, 14); // Body tucked under blanket
+        ctx.fillStyle = '#fed7aa'; // Head on pillow
+        ctx.fillRect(-2, -12, 12, 12);
+        ctx.fillStyle = agent.hairColor;
+        ctx.fillRect(-4, -14, 14, 6);
+
+        // Name Tag & Zzz Bubble above sleeping agent
+        drawAgentNameBadge(agent.name, agent.color, 24, -22);
+        drawEmoteBubble(24, -42, '💤', tick);
+        ctx.restore(); // MUST RESTORE TRANSFORM MATRIX!
+        return;
+      }
+
+      // Check if Agent is Sitting (At workstation desk, dining table, or game sofa)
+      const isSitting = isWorking ||
+        (Math.abs(agent.gx - agent.deskGx) < 0.35 && Math.abs(agent.gy - agent.deskGy) < 0.35) ||
+        (Math.abs(agent.gx - 22.5) < 1.0 && Math.abs(agent.gy - 4.6) < 1.0) ||
+        (Math.abs(agent.gx - 24.8) < 1.0 && Math.abs(agent.gy - 12.2) < 1.0);
+
+      const sitDrop = isSitting ? 5 : 0;
+      let bob = 0;
+      let leftFootOff = 0;
+      let rightFootOff = 0;
+      let leftArmOff = 0;
+      let rightArmOff = 0;
+
+      if (isWalking) {
+        const f = agent.walkFrame;
+        if (f === 1) {
+          bob = 1;
+          leftFootOff = 5;
+          rightFootOff = -4;
+          leftArmOff = -4;
+          rightArmOff = 5;
+        } else if (f === 3) {
+          bob = 1;
+          leftFootOff = -4;
+          rightFootOff = 5;
+          leftArmOff = 5;
+          rightArmOff = -4;
+        }
+      } else if (isWorking) {
+        bob = (Math.floor(tick / 10) % 2 === 0) ? 1 : 0; // Typing rhythm
+      } else if (isSitting) {
+        bob = (Math.floor(tick / 24) % 2 === 0) ? 1 : 0; // Gentle breathing
+      }
+
+      // Floor Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.ellipse(12, 6, 14, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Common Leg Rendering (Standing / Walking vs Sitting)
+      if (isSitting) {
+        // Chair seat shadow under hips
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(2, -2 + sitDrop, 20, 5);
+        // Horizontal Seated Thighs
+        ctx.fillStyle = agent.pantColor;
+        ctx.fillRect(3, -7 + sitDrop, 18, 6);
+        // Vertical Calves
+        ctx.fillRect(4, -1 + sitDrop, 5, 8);
+        ctx.fillRect(15, -1 + sitDrop, 5, 8);
+        // Shoes
+        ctx.fillStyle = (agent.model === 'coder') ? '#f8fafc' : (agent.model === 'infra' ? '#451a03' : '#0f172a');
+        ctx.fillRect(3, 7 + sitDrop, 6, 3);
+        ctx.fillRect(14, 7 + sitDrop, 6, 3);
+      } else {
+        // Standing / Walking Straight Legs
+        ctx.fillStyle = agent.pantColor;
+        ctx.fillRect(5, -6 - bob + leftFootOff, 5, 10);
+        ctx.fillRect(14, -6 - bob + rightFootOff, 5, 10);
+        ctx.fillStyle = (agent.model === 'coder') ? '#f8fafc' : (agent.model === 'infra' ? '#451a03' : '#0f172a');
+        ctx.fillRect(4, 3 - bob + leftFootOff, 6, 3);
+        ctx.fillRect(14, 3 - bob + rightFootOff, 6, 3);
+      }
+
+      // Helper function for typing or sitting arms
+      function drawCharacterArms(modelColor) {
+        if (isWorking) {
+          // Active typing hands on desk / keyboard!
+          const typeStep = (Math.floor(tick / 8) % 2 === 0) ? 2 : -2;
+          ctx.fillStyle = modelColor;
+          ctx.fillRect(1, -17 + sitDrop + typeStep, 4, 9);
+          ctx.fillRect(19, -17 + sitDrop - typeStep, 4, 9);
+          // Skin hands
+          ctx.fillStyle = '#fed7aa';
+          ctx.fillRect(0, -9 + sitDrop + typeStep, 5, 5);
+          ctx.fillRect(19, -9 + sitDrop - typeStep, 5, 5);
+        } else if (isSitting) {
+          // Resting hands on knees / table
+          ctx.fillStyle = modelColor;
+          ctx.fillRect(1, -17 + sitDrop, 4, 9);
+          ctx.fillRect(19, -17 + sitDrop, 4, 9);
+          ctx.fillStyle = '#fed7aa';
+          ctx.fillRect(1, -9 + sitDrop, 5, 4);
+          ctx.fillRect(18, -9 + sitDrop, 5, 4);
+        } else {
+          // Walking/standing swinging arms
+          ctx.fillStyle = modelColor;
+          ctx.fillRect(0, -21 - bob + leftArmOff, 4, 11);
+          ctx.fillRect(20, -21 - bob + rightArmOff, 4, 11);
+        }
+      }
+
+      // ======================================================================
+      // MODEL 1: LEADA (Royal Indigo Blazer, Gold Tie, Glasses, Silver Hair)
+      // ======================================================================
+      if (agent.model === 'leader') {
+        ctx.fillStyle = agent.color; // Royal Indigo
+        ctx.fillRect(3, -22 + sitDrop - bob, 18, 17);
+        ctx.fillStyle = '#ffffff'; // White shirt
+        ctx.fillRect(9, -22 + sitDrop - bob, 6, 8);
+        ctx.fillStyle = agent.tieColor; // Gold tie
+        ctx.fillRect(11, -19 + sitDrop - bob, 2, 8);
+
+        drawCharacterArms(agent.color);
+
+        ctx.fillStyle = '#fed7aa';
+        ctx.fillRect(5, -34 + sitDrop - bob, 14, 12);
+
+        ctx.fillStyle = agent.hairColor;
+        ctx.fillRect(3, -39 + sitDrop - bob, 18, 7);
+        ctx.fillRect(3, -34 + sitDrop - bob, 3, 6);
+
+        ctx.fillStyle = '#0f172a'; // Glasses
+        ctx.fillRect(7, -30 + sitDrop - bob, 4, 4);
+        ctx.fillRect(13, -30 + sitDrop - bob, 4, 4);
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillRect(8, -29 + sitDrop - bob, 2, 2);
+        ctx.fillRect(14, -29 + sitDrop - bob, 2, 2);
+      }
+
+      // ======================================================================
+      // MODEL 2: CODER (Bright Orange Hoodie, Cyan Headphones, Spiky Hair)
+      // ======================================================================
+      else if (agent.model === 'coder') {
+        ctx.fillStyle = agent.color; // Orange hoodie
+        ctx.fillRect(2, -22 + sitDrop - bob, 20, 18);
+        ctx.fillStyle = '#c2410c'; // Pocket
+        ctx.fillRect(6, -14 + sitDrop - bob, 12, 7);
+
+        drawCharacterArms(agent.color);
+
+        ctx.fillStyle = agent.headphoneColor; // Cyan headphones
+        ctx.fillRect(0, -26 + sitDrop - bob, 4, 6);
+        ctx.fillRect(20, -26 + sitDrop - bob, 4, 6);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(2, -27 + sitDrop - bob, 20, 3);
+
+        ctx.fillStyle = '#fed7aa';
+        ctx.fillRect(5, -34 + sitDrop - bob, 14, 12);
+
+        ctx.fillStyle = agent.hairColor; // Spiky
+        ctx.fillRect(3, -40 + sitDrop - bob, 18, 8);
+        ctx.fillRect(6, -44 + sitDrop - bob, 4, 5);
+        ctx.fillRect(14, -44 + sitDrop - bob, 4, 5);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(8, -29 + sitDrop - bob, 3, 3);
+        ctx.fillRect(14, -29 + sitDrop - bob, 3, 3);
+      }
+
+      // ======================================================================
+      // MODEL 3: SECU (Fedora Hat, Long Olive Trench Coat, Boots)
+      // ======================================================================
+      else if (agent.model === 'security') {
+        ctx.fillStyle = agent.color; // Olive trench coat
+        ctx.fillRect(3, -22 + sitDrop - bob, 18, 20);
+        ctx.fillStyle = '#4d7c0f';
+        ctx.fillRect(1, -24 + sitDrop - bob, 6, 7);
+        ctx.fillRect(17, -24 + sitDrop - bob, 6, 7);
+
+        drawCharacterArms(agent.color);
+
+        ctx.fillStyle = '#fed7aa';
+        ctx.fillRect(5, -34 + sitDrop - bob, 14, 12);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(8, -28 + sitDrop - bob, 3, 3);
+        ctx.fillRect(14, -28 + sitDrop - bob, 3, 3);
+
+        ctx.fillStyle = agent.hatColor; // Fedora
+        ctx.fillRect(0, -37 + sitDrop - bob, 24, 4);
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(4, -45 + sitDrop - bob, 16, 9);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(4, -39 + sitDrop - bob, 16, 3);
+      }
+
+      // ======================================================================
+      // MODEL 4: INFRAS (DevOps Work Vest, Utility Belt, Tech Cap)
+      // ======================================================================
+      else if (agent.model === 'infra') {
+        ctx.fillStyle = '#1e293b'; // Charcoal undershirt
+        ctx.fillRect(3, -22 + sitDrop - bob, 18, 17);
+        ctx.fillStyle = agent.color; // Crimson Utility Work Vest
+        ctx.fillRect(2, -22 + sitDrop - bob, 6, 17);
+        ctx.fillRect(16, -22 + sitDrop - bob, 6, 17);
+
+        // Utility toolbelt
+        ctx.fillStyle = agent.beltColor;
+        ctx.fillRect(3, -7 + sitDrop - bob, 18, 3);
+
+        drawCharacterArms(agent.color);
+
+        ctx.fillStyle = '#fed7aa';
+        ctx.fillRect(5, -34 + sitDrop - bob, 14, 12);
+
+        // Tech Visor / Cap
+        ctx.fillStyle = agent.hairColor;
+        ctx.fillRect(3, -38 + sitDrop - bob, 18, 6);
+        ctx.fillRect(2, -34 + sitDrop - bob, 20, 3); // Cap visor
+        ctx.fillStyle = '#38bdf8'; // Glowing scanner band
+        ctx.fillRect(4, -33 + sitDrop - bob, 16, 2);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(8, -28 + sitDrop - bob, 3, 3);
+        ctx.fillRect(14, -28 + sitDrop - bob, 3, 3);
+      }
+
+      // Name Tag Above Agent (scales with zoom, transparent bg)
+      drawAgentNameBadge(agent.name, agent.color, 12, -48 + sitDrop - bob);
+
+      // Emote Bubble
+      const bubbleEmote = isWorking ? '💻' : agent.bubble;
+      drawEmoteBubble(12, -68 + sitDrop - bob, bubbleEmote, tick);
+
+      ctx.restore();
+    }
+
+    // Transparent, Naturally Scaling Name Tag (Shrinks when zoomed out)
+    function drawAgentNameBadge(name, color, x, y) {
+      ctx.save();
+      ctx.font = 'bold 8px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Crisp black text outline for readability on any surface without a solid box
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#000000';
+      ctx.strokeText(name, x, y);
+
+      // Bright agent color text
+      ctx.fillStyle = color;
+      ctx.fillText(name, x, y);
+
+      ctx.restore();
+    }
+
+    // Naturally Scaling Emote Bubble (Shrinks when zoomed out)
+    function drawEmoteBubble(x, y, text, tick) {
+      ctx.save();
+      const floatY = y + Math.sin(tick * 0.08) * 2;
+
+      // Bubble container with subtle glass outline
+      ctx.fillStyle = 'rgba(10, 16, 28, 0.85)';
+      ctx.strokeStyle = '#38ef7d';
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.roundRect(x - 12, floatY - 12, 24, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Bubble Tail
+      ctx.beginPath();
+      ctx.moveTo(x - 3, floatY + 6);
+      ctx.lineTo(x, floatY + 10);
+      ctx.lineTo(x + 3, floatY + 6);
+      ctx.fillStyle = '#38ef7d';
+      ctx.fill();
+
+      ctx.font = '13px "VT323", monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, floatY + 1);
+
+      ctx.restore();
+    }
+
+    // ========================================================================
+    // 6. MAIN ENGINE LOOP & SMOOTH INTERPOLATION (NO BODY ROTATION/SPIN)
+    // ========================================================================
+    let tick = 0;
+
+    function renderLoop() {
+      tick++;
+
+      // Reset transform and clear the entire physical canvas
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#030611';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.translate(panX, panY);
+      ctx.scale(zoom, zoom);
+
+      // 1. Draw 2.5D Office Floor, Walls, Decor & Furniture
+      drawOfficeWorld(tick);
+
+      // 2. Update Agent Movements (Navigasi Lewat Pintu & Waypoints)
+      Object.values(agentSprites).forEach(agent => {
+        if (agent.state !== 'working') {
+          if (tick >= agent.nextRoamTick) {
+            const dice = Math.random();
+            if (dice < 0.30) {
+              setAgentDestination(agent, agent.deskGx, agent.deskGy, 0, '💻');
+            } else if (dice < 0.55) {
+              const bedSpot = (Math.random() < 0.5) ? BUNK_BED_BOTTOM : BUNK_BED_TOP;
+              setAgentDestination(agent, bedSpot.gx, bedSpot.gy, bedSpot.gz || 0, '💤');
+            } else {
+              const spot = roamSpots[Math.floor(Math.random() * roamSpots.length)];
+              setAgentDestination(agent, spot.gx, spot.gy, spot.gz || 0, spot.bubble);
+            }
+            agent.nextRoamTick = tick + 420 + Math.floor(Math.random() * 450);
+            updatePillPreview();
+          }
+        }
+
+        const dx = agent.targetGx - agent.gx;
+        const dy = agent.targetGy - agent.gy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > agent.speed) {
+          agent.state = 'walking';
+          agent.gx += (dx / dist) * agent.speed;
+          agent.gy += (dy / dist) * agent.speed;
+          agent.gz = 0;
+
+          agent.stepDist += agent.speed;
+          agent.walkFrame = Math.floor(agent.stepDist / 0.12) % 4;
+        } else {
+          agent.gx = agent.targetGx;
+          agent.gy = agent.targetGy;
+          agent.gz = agent.targetGz || 0;
+
+          // Periksa apakah masih ada waypoint berikutnya di rute pintu
+          if (agent.waypoints && agent.waypoints.length > 0) {
+            agent.waypoints.shift(); // Selesai waypoint saat ini
+            if (agent.waypoints.length > 0) {
+              const nextPt = agent.waypoints[0];
+              agent.targetGx = nextPt.gx;
+              agent.targetGy = nextPt.gy;
+              agent.targetGz = nextPt.gz || 0;
+              return;
+            }
+          }
+
+          agent.stepDist = 0;
+          agent.walkFrame = 0;
+
+          const isAtDesk = Math.abs(agent.gx - agent.deskGx) < 0.3 && Math.abs(agent.gy - agent.deskGy) < 0.3;
+          const isAtBed = Math.abs(agent.gx - BUNK_BED_BOTTOM.gx) < 0.5 && Math.abs(agent.gy - BUNK_BED_BOTTOM.gy) < 0.5;
+
+          if (isAtDesk) {
+            agent.state = (agent.currentTask) ? 'working' : 'idle';
+            agent.bubble = '💻';
+          } else if (isAtBed) {
+            agent.state = 'sleeping';
+            agent.bubble = '💤';
+          } else {
+            agent.state = 'idle';
+          }
+        }
+      });
+
+      // 3. Render Agents Sorted by Depth (gy)
+      const sorted = Object.values(agentSprites).sort((a, b) => a.gy - b.gy);
+      sorted.forEach(agent => drawAgent(agent, tick));
+
+      ctx.restore();
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    renderLoop();
+
+    // ========================================================================
+    // 7. FLOATING DOCK LOGIC (MINIMIZE / EXPAND TOGGLE)
+    // ========================================================================
+    let selectedAgent = 'leada';
+    const dockEl = document.getElementById('commandDock');
+
+    function toggleDock(open) {
+      if (open) {
+        dockEl.classList.add('open');
+      } else {
+        dockEl.classList.remove('open');
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleDock(false);
+    });
+
+    function updatePillPreview() {
+      const p = document.getElementById('pillPreview');
+      if (!p) return;
+      const statusArr = [];
+      for (const a of Object.values(agentSprites)) {
+        const stateText = a.state === 'working' ? 'Coding' : (a.state === 'sleeping' ? 'Tidur' : 'Santai');
+        statusArr.push('<span>● ' + a.name + ': ' + stateText + '</span>');
+      }
+      p.innerHTML = statusArr.join('');
+    }
+
+    function selectAgent(id) {
+      selectedAgent = id;
+      document.querySelectorAll('.agent-tab-item').forEach(el => el.classList.remove('active'));
+      const activeEl = document.getElementById('tab-' + id);
+      if (activeEl) activeEl.classList.add('active');
+    }
+
+    function setPrompt(text) {
+      document.getElementById('taskInput').value = text;
+    }
+
+    function dispatchTask() {
+      const input = document.getElementById('taskInput');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+
+      ws.send(JSON.stringify({
+        type: 'dispatch_task',
+        agentId: selectedAgent,
+        prompt: prompt
+      }));
+
+      input.value = '';
+    }
+
+    function appendLog(text, className) {
+      const logs = document.getElementById('termLogs');
+      const span = document.createElement('span');
+      span.className = className;
+      span.textContent = text;
+      logs.appendChild(span);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function clearLogs() {
+      document.getElementById('termLogs').innerHTML = '';
+    }
+
+    // WebSocket Integration
+    const ws = new WebSocket('ws://' + window.location.host + '/ws');
+
+    ws.onopen = () => {
+      appendLog('[CCTV] WebSocket terhubung ke Bun CCTV Office Engine.', 'log-sys');
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'sync_state') {
+        Object.values(data.agents).forEach(a => updateAgentStatus(a.id, a.status, a.task));
+      } else if (data.type === 'agent_status') {
+        updateAgentStatus(data.agentId, data.status, data.task);
+      } else if (data.type === 'log') {
+        const streamClass = 'log-' + (data.stream || 'stdout');
+        appendLog(data.text, streamClass);
+      }
+    };
+
+    function updateAgentStatus(agentId, status, task) {
+      const tabStatus = document.getElementById('tabStatus-' + agentId);
+      const sprite = agentSprites[agentId];
+      if (!sprite) return;
+
+      if (status === 'working') {
+        if (tabStatus) {
+          tabStatus.textContent = 'WORKING';
+          tabStatus.style.color = '#fbbf24';
+        }
+        setAgentDestination(sprite, sprite.deskGx, sprite.deskGy, 0, '💻');
+        document.getElementById('statusHeader').textContent = 'CCTV LIVE: ' + agentId.toUpperCase() + ' SEDANG MENGERJAKAN TUGAS';
+      } else if (status === 'completed') {
+        if (tabStatus) {
+          tabStatus.textContent = (agentId === 'leada') ? 'APPROVED 🏆' : 'DONE ✅';
+          tabStatus.style.color = '#22c55e';
+        }
+        sprite.bubble = '✅';
+        document.getElementById('statusHeader').textContent = 'CCTV LIVE: ' + agentId.toUpperCase() + ' SELESAI & TERVERIFIKASI';
+      } else {
+        if (tabStatus) {
+          tabStatus.textContent = 'IDLE';
+          tabStatus.style.color = '#94a3b8';
+        }
+        sprite.nextRoamTick = tick + 60;
+        sprite.bubble = '💬';
+        document.getElementById('statusHeader').textContent = 'STATUS: 4 AGENTS ROAMING & CODING';
+      }
+      updatePillPreview();
+    }
+
+    // Top Clock
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clockHUD').textContent = now.toTimeString().split(' ')[0] + ' UTC';
+    }, 1000);
+  </script>
+</body>
+</html>

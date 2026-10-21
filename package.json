@@ -1,0 +1,20 @@
+{
+  "name": "virtual-office-ai",
+  "version": "1.0.0",
+  "description": "2.5D Isometric Retro Pixel Art Virtual Office for Autonomous AI Agent Squad (Leada, Coder, Secu, Infras)",
+  "main": "server.js",
+  "scripts": {
+    "start": "bun run server.js",
+    "dev": "bun --watch server.js"
+  },
+  "keywords": [
+    "virtual-office",
+    "pixel-art",
+    "ai-agents",
+    "autonomous-agents",
+    "bun",
+    "cctv"
+  ],
+  "author": "Aripardhana",
+  "license": "MIT"
+}
