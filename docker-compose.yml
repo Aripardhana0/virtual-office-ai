@@ -1,0 +1,16 @@
+services:
+  virtual-office:
+    build: .
+    container_name: virtual-office-ai
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3333:3333"
+    volumes:
+      - ${OMP_HOST_BIN:?Set OMP_HOST_BIN to the Linux omp executable}:/usr/local/bin/omp:ro
+      - ${OMP_HOST_STATE:?Set OMP_HOST_STATE to your OMP state directory}:/root/.omp
+      - ${OMP_WORKSPACE:?Set OMP_WORKSPACE to the target project}:/workspace
+    environment:
+      - PORT=3333
+      - HOST=0.0.0.0
+      - OMP_CWD=/workspace
+      - OMP_BIN=/usr/local/bin/omp

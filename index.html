@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CCTV-04: VIRTUAL PIXEL OFFICE 2.5D (4 AGENTS HQ)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,13 +24,11 @@
       width: 100vw;
       overflow: hidden;
       position: relative;
-      user-select: none;
     }
 
-    /* Subtle CRT Film Grain */
-    body::before {
-      content: " ";
-      display: block;
+    /* Optional CRT Scanlines (Disabled by default for razor-sharp pixel art) */
+    #crtOverlay {
+      display: none;
       position: fixed;
       top: 0; left: 0; bottom: 0; right: 0;
       background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.01));
@@ -37,8 +36,11 @@
       background-size: 100% 3px, 6px 100%;
       pointer-events: none;
     }
+    #crtOverlay.active {
+      display: block;
+    }
 
-    /* Fullscreen High-DPI Interactive Canvas */
+    /* Fullscreen High-DPI Interactive Canvas - 100% Razor Sharp Pixelated */
     #officeCanvas {
       position: fixed;
       top: 0;
@@ -48,9 +50,12 @@
       display: block;
       z-index: 1;
       cursor: grab;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
       background: radial-gradient(circle at 50% 50%, #0d1629 0%, #02040a 100%);
     }
-
     #officeCanvas:active {
       cursor: grabbing;
     }
@@ -152,18 +157,25 @@
     /* Floating Semi-Transparent Collapsible Command Dock (Bottom Center) */
     .floating-dock-container {
       position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
       z-index: 50;
-      width: 92vw;
-      max-width: 1040px;
+      width: auto;
+      max-width: none;
+      transform: none;
       transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Collapsed Pill Button */
+    .floating-dock-container.open {
+      inset: 0;
+    }
+
+    /* Collapsed Pill Button (Centered) */
     .dock-pill {
-      background: rgba(8, 14, 24, 0.85);
+      max-width: 860px;
+      margin: 0 auto;
+      background: rgba(8, 14, 24, 0.88);
       border: 1px solid rgba(56, 239, 125, 0.35);
       backdrop-filter: blur(14px);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
@@ -215,15 +227,16 @@
     /* Expanded Drawer Box */
     .dock-drawer {
       display: none;
-      background: rgba(6, 11, 20, 0.92);
+      background: rgba(6, 11, 20, 0.95);
       border: 1px solid rgba(56, 239, 125, 0.4);
       backdrop-filter: blur(20px) saturate(180%);
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
-      border-radius: 12px;
+      border-radius: 0;
       padding: 12px 16px;
       flex-direction: column;
       gap: 10px;
-      height: 310px;
+      height: 100%;
+      min-height: 0;
     }
 
     .floating-dock-container.open .dock-pill {
@@ -272,14 +285,23 @@
     .drawer-content {
       flex: 1;
       display: grid;
-      grid-template-columns: 440px 1fr;
+      grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
       gap: 12px;
+      min-height: 0;
       overflow: hidden;
     }
 
     @media (max-width: 920px) {
       .drawer-content {
         grid-template-columns: 1fr;
+        grid-template-rows: minmax(120px, 35%) minmax(0, 1fr);
+      }
+      .drawer-top, .term-header {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .pill-agent-preview {
+        display: none;
       }
     }
 
@@ -287,6 +309,11 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      max-height: 100%;
+      padding-right: 4px;
     }
 
     .agent-tabs-row {
@@ -341,7 +368,9 @@
     }
 
     textarea {
-      flex: 1;
+      height: 56px;
+      min-height: 50px;
+      flex-shrink: 0;
       width: 100%;
       background: rgba(3, 7, 18, 0.75);
       border: 1px solid #1e293b;
@@ -351,6 +380,8 @@
       padding: 6px 10px;
       border-radius: 6px;
       resize: none;
+      user-select: text;
+      -webkit-user-select: text;
     }
 
     textarea:focus {
@@ -358,47 +389,28 @@
       border-color: #38ef7d;
     }
 
-    .chip-list {
-      display: flex;
-      gap: 5px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-    }
-
-    .chip-tag {
-      background: #0e1726;
-      border: 1px solid #1e2d42;
-      color: #94a3b8;
-      font-family: 'VT323', monospace;
-      font-size: 15px;
-      padding: 2px 7px;
-      border-radius: 4px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .chip-tag:hover {
-      border-color: #38ef7d;
-      color: #38ef7d;
-    }
 
     .btn-exec {
-      background: #15803d;
-      border: 1px solid #22c55e;
+      background: #16a34a;
+      border: 1px solid #4ade80;
       color: #ffffff;
       font-family: 'Press Start 2P', monospace;
       font-size: 10px;
-      padding: 9px;
+      padding: 11px;
       border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.45);
+      transition: all 0.15s ease;
     }
 
     .btn-exec:hover {
-      background: #16a34a;
+      background: #22c55e;
+      box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
     }
 
     /* Terminal Panel */
@@ -409,6 +421,8 @@
       padding: 8px 10px;
       display: flex;
       flex-direction: column;
+      min-width: 0;
+      min-height: 0;
       overflow: hidden;
     }
 
@@ -428,13 +442,40 @@
       flex: 1;
       overflow-y: auto;
       font-family: 'VT323', monospace;
-      font-size: 18px;
-      line-height: 1.25;
+      font-size: 15px;
+      line-height: 1.2;
       color: #cbd5e1;
       white-space: pre-wrap;
       word-break: break-all;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      cursor: text;
+    }
+    .term-body * {
+      user-select: text !important;
+      -webkit-user-select: text !important;
     }
 
+    .term-action-btn {
+      cursor: pointer;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      color: #94a3b8;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      transition: all 0.15s ease;
+    }
+    .term-action-btn:hover {
+      border-color: #38ef7d;
+      color: #38ef7d;
+    }
+
+    .log-stdout, .log-stderr, .log-sys, .log-lead, .log-coder, .log-infra, .log-secu, .log-success {
+      font-size: 14.5px;
+      line-height: 1.18;
+    }
     .log-stdout { color: #a7f3d0; }
     .log-stderr { color: #f87171; }
     .log-sys { color: #38bdf8; }
@@ -443,12 +484,77 @@
     .log-infra { color: #f87171; font-weight: bold; }
     .log-secu { color: #a3e635; font-weight: bold; }
     .log-success { color: #4ade80; font-weight: bold; text-shadow: 0 0 6px rgba(74, 222, 128, 0.4); }
+    .log-user {
+      font-size: 15px;
+      color: #38ef7d;
+      font-weight: bold;
+      background: rgba(56, 239, 125, 0.12);
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 3px 0;
+      border-left: 3px solid #38ef7d;
+    }
+    .runtime-panel, .omp-dialog {
+      background: #0f172a;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #e2e8f0;
+      font-size: 16px;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+    .runtime-panel p + p { margin-top: 4px; }
+    .runtime-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .runtime-controls button, .omp-dialog button {
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      font: inherit;
+      padding: 6px 10px;
+      min-height: 36px;
+      cursor: pointer;
+    }
+    select, .omp-dialog input:not([type=radio]):not([type=checkbox]), .omp-dialog textarea {
+      background: #030611;
+      color: #e2e8f0;
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      font: inherit;
+      padding: 6px;
+      max-width: 100%;
+    }
+    .omp-dialog textarea { height: 100px; resize: vertical; }
+    .omp-dialog input:not([type=radio]):not([type=checkbox]) { width: 100%; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    :focus-visible { outline: 2px solid #f8fafc; outline-offset: 2px; }
+    textarea:focus-visible { outline: 2px solid #f8fafc; }
+    .btn-exec { color: #030611; }
+    .term-header { color: #94a3b8; }
+    #ompDialogs { overflow-y: auto; flex-shrink: 0; max-height: 65%; }
+    .omp-dialog { margin: 0 0 8px; white-space: pre-wrap; }
+    .omp-dialog h3 { font-size: 18px; margin-bottom: 6px; }
+    .omp-dialog fieldset { border: 1px solid #94a3b8; padding: 8px; margin: 8px 0; min-width: 0; }
+    .omp-option { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; cursor: pointer; }
+    .omp-option input { margin-top: 4px; }
+    .omp-option small { display: block; color: #cbd5e1; font: inherit; }
+    .omp-dialog .runtime-controls { margin-top: 8px; }
+    #subagentList { margin: 4px 0 0; padding-left: 18px; max-height: 120px; overflow-y: auto; }
+    #sessionReset[hidden] { display: none; }
+    #statusHeader { max-width: min(70vw, 600px); overflow-wrap: anywhere; }
+    .rec-dot { animation: none; background: #94a3b8; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
 
   <!-- Fullscreen Interactive Canvas -->
   <canvas id="officeCanvas"></canvas>
+  <div id="crtOverlay"></div>
 
   <!-- Top Left Status HUD -->
   <div class="cctv-top-left">
@@ -457,13 +563,14 @@
       <span>CAM-04 · 2.5D DEV SQUAD HEADQUARTERS</span>
     </div>
     <div class="cctv-substatus" id="statusHeader">
-      CCTV LIVE: 4 AGENTS (LEADA, CODER, SECU, INFRAS)
+      OMP: menghubungkan ke server
     </div>
   </div>
 
   <!-- Top Right Camera Controls HUD -->
   <div class="cctv-top-right">
     <span class="nav-tip">🖱️ SCROLL TO ZOOM · DRAG TO PAN</span>
+    <button class="hud-btn" id="crtBtn" onclick="toggleCRT()" title="Toggle Scanline Filter">📺 CRT: OFF</button>
     <button class="hud-btn" onclick="zoomIn()" title="Zoom In">+</button>
     <button class="hud-btn" onclick="zoomOut()" title="Zoom Out">-</button>
     <button class="hud-btn" onclick="resetView()" title="Reset Kamera">⟲ RESET</button>
@@ -472,7 +579,7 @@
 
   <!-- Floating Collapsible Command Dock (Bottom Center) -->
   <div class="floating-dock-container" id="commandDock">
-    <div class="dock-pill" onclick="toggleDock(true)">
+    <div class="dock-pill" role="button" tabindex="0" aria-expanded="false" aria-controls="commandDrawer" onclick="toggleDock(true)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleDock(true); }">
       <div class="pill-left">
         <span style="color:#38ef7d;">⚡ OMP COMMAND DOCK</span>
         <div class="pill-agent-preview" id="pillPreview">
@@ -485,10 +592,10 @@
       <div class="pill-open-btn">▲ BUKA DISPATCHER</div>
     </div>
 
-    <div class="dock-drawer">
+    <div class="dock-drawer" id="commandDrawer">
       <div class="drawer-top">
         <div class="drawer-title">
-          <span>⚡ AGENT COMMAND DISPATCHER (4 SQUAD MEMBERS)</span>
+          <span>OMP COMMAND DISPATCHER</span>
         </div>
         <button class="btn-close" onclick="toggleDock(false)">▼ TUTUP [ESC]</button>
       </div>
@@ -497,7 +604,7 @@
         <div class="form-panel">
           <!-- 4 Agent Selector Tabs -->
           <div class="agent-tabs-row">
-            <div class="agent-tab-item active" id="tab-leada" onclick="selectAgent('leada')">
+            <div class="agent-tab-item active" id="tab-leada" role="button" tabindex="0" aria-pressed="true" onclick="selectAgent('leada')">
               <div class="tab-avatar" style="background:#6366f1;">L</div>
               <div>
                 <p class="tab-name">LEADA</p>
@@ -505,7 +612,7 @@
               </div>
             </div>
 
-            <div class="agent-tab-item" id="tab-coder" onclick="selectAgent('coder')">
+            <div class="agent-tab-item" id="tab-coder" role="button" tabindex="0" aria-pressed="false" onclick="selectAgent('coder')">
               <div class="tab-avatar" style="background:#ff6b00;">C</div>
               <div>
                 <p class="tab-name">CODER</p>
@@ -513,7 +620,7 @@
               </div>
             </div>
 
-            <div class="agent-tab-item" id="tab-secu" onclick="selectAgent('secu')">
+            <div class="agent-tab-item" id="tab-secu" role="button" tabindex="0" aria-pressed="false" onclick="selectAgent('secu')">
               <div class="tab-avatar" style="background:#84cc16;">S</div>
               <div>
                 <p class="tab-name">SECU</p>
@@ -521,7 +628,7 @@
               </div>
             </div>
 
-            <div class="agent-tab-item" id="tab-infras" onclick="selectAgent('infras')">
+            <div class="agent-tab-item" id="tab-infras" role="button" tabindex="0" aria-pressed="false" onclick="selectAgent('infras')">
               <div class="tab-avatar" style="background:#ef4444;">I</div>
               <div>
                 <p class="tab-name">INFRAS</p>
@@ -530,31 +637,53 @@
             </div>
           </div>
 
-          <textarea id="taskInput" placeholder="Ketik tugas atau instruksi untuk OMP..."></textarea>
-
-          <div class="chip-list">
-            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Review arsitektur & sprint planning')">🧪 Sim Leader</button>
-            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Menulis fitur baru & implementasi logic')">🧪 Sim Coder</button>
-            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Security audit & pengetesan celah')">🧪 Sim Secu</button>
-            <button class="chip-tag" onclick="setPrompt('[SIMULASI] Scaling server, Docker & deploy k8s')">🧪 Sim Infras</button>
-            <button class="chip-tag" onclick="setPrompt('omp ps')">⚡ omp ps</button>
+          <textarea id="taskInput" aria-label="Instruksi agent atau perintah slash OMP" aria-describedby="targetHint" placeholder="Instruksi atau /perintah OMP. Enter: kirim; Shift+Enter: baris baru."></textarea>
+          <p id="targetHint">Target: lead OMP. Delegasi ditentukan oleh runtime.</p>
+          <div class="runtime-controls">
+            <label for="streamingBehavior">Saat sibuk</label>
+            <select id="streamingBehavior">
+              <option value="steer">Steer: arahkan sekarang</option>
+              <option value="followUp">Follow-up: setelah giliran ini</option>
+            </select>
+            <button type="button" id="btnAbort" disabled>Stop OMP</button>
           </div>
-
-          <button class="btn-exec" onclick="dispatchTask()">
-            <span>▶ DISPATCH AGENT (RUN OMP)</span>
-          </button>
+          <button class="btn-exec" id="btnDispatch" onclick="dispatchTask()" disabled>KIRIM [ENTER]</button>
+          <div class="runtime-panel">
+            <p id="connectionStatus" role="status">Menghubungkan ke server...</p>
+            <p id="sessionStatus">Sesi OMP belum dimulai.</p>
+            <p id="runtimeRoute">Belum ada rute runtime.</p>
+            <p id="runtimeAction">Belum ada aktivitas runtime.</p>
+            <details>
+              <summary>Subagent runtime</summary>
+              <ul id="subagentList"><li>Belum ada subagent.</li></ul>
+            </details>
+            <p>Tab adalah kelompok visual, bukan empat proses tetap. Perintah / dikirim utuh ke lead OMP, termasuk model/thinking jika didukung.</p>
+            <div class="runtime-controls">
+              <button type="button" id="btnCommands" disabled>Daftar perintah /</button>
+              <button type="button" id="btnNewSession" disabled>Sesi baru</button>
+            </div>
+            <div id="sessionReset" hidden>
+              <p>Mulai percakapan OMP baru? Konteks aktif akan berganti. Log layar tidak dihapus; riwayat lama mengikuti penyimpanan OMP.</p>
+              <div class="runtime-controls">
+                <button type="button" id="btnConfirmReset">Mulai sesi baru</button>
+                <button type="button" id="btnCancelReset">Batal</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="terminal-panel">
           <div class="term-header">
-            <span>LIVE OMP TERMINAL STREAM</span>
-            <span style="cursor:pointer;" onclick="clearLogs()">[CLEAR]</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span>LIVE CHAT & TERMINAL</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="term-action-btn" onclick="copyLogs()" id="btnCopyLogs" title="Salin seluruh isi chat dan log">COPY LOGS</button>
+              <button type="button" class="term-action-btn" onclick="clearLogs()" title="Bersihkan tampilan log saja, bukan riwayat OMP">CLEAR VIEW</button>
+            </div>
           </div>
-          <div class="term-body" id="termLogs">
-[CCTV-04] Dev Squad Headquarters Ready.
-[SQUAD] 4 Anggota: LEADA (Lead), CODER (Code), SECU (Security), INFRAS (DevOps).
-[LAYOUT] Area kerja 2X lebih luas dengan kata-kata motivasi developer di tembok.
-[REST] Kamar tidur khusus ranjang tingkat 2 (Bunk Bed) di sayap istirahat.
+          <div id="ompDialogs" role="region" aria-label="Pertanyaan dan izin OMP"></div>
+          <div class="term-body" id="termLogs" tabindex="0" aria-label="Output terminal">[OMP] Kirim instruksi untuk memulai sesi. Aktivitas dan hasil berasal dari runtime.
           </div>
         </div>
       </div>
@@ -604,6 +733,10 @@
       canvas.height = Math.round(h * dpr);
       canvas.style.width = w + 'px';
       canvas.style.height = h + 'px';
+      ctx.imageSmoothingEnabled = false;
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.msImageSmoothingEnabled = false;
       resetView();
     }
 
@@ -640,9 +773,23 @@
 
     function applyZoom(factor, cursorScreenX, cursorScreenY) {
       const newZoom = Math.min(Math.max(zoom * factor, 0.25), 3.5);
-      panX = cursorScreenX - (cursorScreenX - panX) * (newZoom / zoom);
-      panY = cursorScreenY - (cursorScreenY - panY) * (newZoom / zoom);
+      panX = Math.round(cursorScreenX - (cursorScreenX - panX) * (newZoom / zoom));
+      panY = Math.round(cursorScreenY - (cursorScreenY - panY) * (newZoom / zoom));
       zoom = newZoom;
+    }
+
+    function toggleCRT() {
+      const crt = document.getElementById('crtOverlay');
+      const btn = document.getElementById('crtBtn');
+      if (crt.classList.contains('active')) {
+        crt.classList.remove('active');
+        btn.textContent = '📺 CRT: OFF';
+        btn.style.color = '#94a3b8';
+      } else {
+        crt.classList.add('active');
+        btn.textContent = '📺 CRT: ON';
+        btn.style.color = '#38ef7d';
+      }
     }
 
     // Precise Cursor-Centered Zoom
@@ -860,11 +1007,13 @@
         targetGx: SEAT_LEADA.gx, targetGy: SEAT_LEADA.gy, targetGz: 0,
         waypoints: [],
         state: 'idle',
+        currentAction: 'idle',
+        actionDetail: '',
         bubble: '💡',
-        speed: 0.038,
+        speed: 0.019,
         stepDist: 0,
         walkFrame: 0,
-        nextRoamTick: 160,
+        nextRoamTick: 1800,
       },
       coder: {
         id: 'coder',
@@ -879,11 +1028,13 @@
         targetGx: SEAT_CODER.gx, targetGy: SEAT_CODER.gy, targetGz: 0,
         waypoints: [],
         state: 'idle',
+        currentAction: 'idle',
+        actionDetail: '',
         bubble: '💻',
-        speed: 0.040,
+        speed: 0.020,
         stepDist: 0,
         walkFrame: 0,
-        nextRoamTick: 240,
+        nextRoamTick: 2400,
       },
       secu: {
         id: 'secu',
@@ -898,11 +1049,13 @@
         targetGx: SEAT_SECU.gx, targetGy: SEAT_SECU.gy, targetGz: 0,
         waypoints: [],
         state: 'idle',
+        currentAction: 'idle',
+        actionDetail: '',
         bubble: '🔍',
-        speed: 0.036,
+        speed: 0.018,
         stepDist: 0,
         walkFrame: 0,
-        nextRoamTick: 320,
+        nextRoamTick: 3000,
       },
       infras: {
         id: 'infras',
@@ -917,11 +1070,13 @@
         targetGx: SEAT_INFRAS.gx, targetGy: SEAT_INFRAS.gy, targetGz: 0,
         waypoints: [],
         state: 'idle',
+        currentAction: 'idle',
+        actionDetail: '',
         bubble: '⚡',
-        speed: 0.039,
+        speed: 0.019,
         stepDist: 0,
         walkFrame: 0,
-        nextRoamTick: 400,
+        nextRoamTick: 3600,
       }
     };
 
@@ -1087,21 +1242,109 @@
 
         const isWorking = st.agent.state === 'working';
         if (isWorking) {
-          ctx.fillStyle = st.screenColor; // Signature screen color
-          ctx.fillRect(mX - 14, mY - 34, 22, 14);
-          ctx.fillStyle = '#e0f2fe';
-          ctx.fillRect(mX - 12, mY - 31, 14, 2);
-          ctx.fillRect(mX - 12, mY - 27, 18, 2);
-          ctx.fillRect(mX - 12, mY - 23, 10, 2);
+          const act = st.agent.currentAction || 'coding';
 
-          ctx.fillStyle = '#052e16'; // Terminal Matrix on right screen
-          ctx.fillRect(mX + 15, mY - 34, 22, 14);
-          ctx.fillStyle = '#4ade80';
-          ctx.fillRect(mX + 17, mY - 31, 16, 2);
-          ctx.fillRect(mX + 17, mY - 27, 12, 2);
-          if (Math.floor(tick / 30) % 2 === 0) {
-            ctx.fillStyle = '#22c55e';
-            ctx.fillRect(mX + 31, mY - 23, 3, 3);
+          if (act === 'reading') {
+            // Left screen: Directory Tree & Vertical Scan Laser
+            ctx.fillStyle = '#082f49';
+            ctx.fillRect(mX - 14, mY - 34, 22, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(mX - 12, mY - 32, 6, 2);
+            ctx.fillRect(mX - 10, mY - 28, 12, 2);
+            ctx.fillRect(mX - 10, mY - 24, 10, 2);
+            // Laser scan bar
+            const scanY = (tick * 1.5) % 12;
+            ctx.fillStyle = '#67e8f9';
+            ctx.fillRect(mX - 14, mY - 34 + scanY, 22, 1.5);
+
+            // Right screen: Schema/Document lines
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(mX + 15, mY - 34, 22, 14);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(mX + 17, mY - 31, 16, 2);
+            ctx.fillRect(mX + 17, mY - 27, 14, 2);
+            ctx.fillRect(mX + 17, mY - 23, 11, 2);
+          } else if (act === 'coding') {
+            // Left screen: Syntax highlighted IDE code
+            ctx.fillStyle = st.screenColor;
+            ctx.fillRect(mX - 14, mY - 34, 22, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(mX - 12, mY - 31, 6, 2);
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(mX - 5, mY - 31, 7, 2);
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(mX - 12, mY - 27, 14, 2);
+            ctx.fillStyle = '#c084fc';
+            ctx.fillRect(mX - 12, mY - 23, 10, 2);
+
+            // Right screen: Compiler output
+            ctx.fillStyle = '#052e16';
+            ctx.fillRect(mX + 15, mY - 34, 22, 14);
+            ctx.fillStyle = '#4ade80';
+            ctx.fillRect(mX + 17, mY - 31, 16, 2);
+            ctx.fillRect(mX + 17, mY - 27, 12, 2);
+            if (Math.floor(tick / 20) % 2 === 0) {
+              ctx.fillStyle = '#22c55e';
+              ctx.fillRect(mX + 31, mY - 23, 3, 3);
+            }
+
+            // Sparkles rising from keyboard
+            if (tick % 6 < 3) {
+              ctx.fillStyle = '#fde047';
+              ctx.fillRect(mX - 6 + ((tick * 3) % 18), mY - 14 - ((tick * 2) % 10), 2, 2);
+            }
+          } else if (act === 'terminal') {
+            // Left screen: Process/Container status
+            ctx.fillStyle = '#1e1b4b';
+            ctx.fillRect(mX - 14, mY - 34, 22, 14);
+            ctx.fillStyle = '#a5b4fc';
+            ctx.fillRect(mX - 12, mY - 31, 16, 2);
+            ctx.fillRect(mX - 12, mY - 27, 14, 2);
+            ctx.fillRect(mX - 12, mY - 23, 8, 2);
+
+            // Right screen: Rapid Matrix Terminal & Blinking cursor
+            ctx.fillStyle = '#022c22';
+            ctx.fillRect(mX + 15, mY - 34, 22, 14);
+            ctx.fillStyle = '#34d399';
+            ctx.fillRect(mX + 17, mY - 31, 18, 2);
+            ctx.fillRect(mX + 17, mY - 27, 14, 2);
+            ctx.fillRect(mX + 17, mY - 23, 10, 2);
+            if (Math.floor(tick / 12) % 2 === 0) {
+              ctx.fillStyle = '#10b981';
+              ctx.fillRect(mX + 28, mY - 23, 3, 3);
+            }
+          } else if (act === 'auditing') {
+            // Left screen: Checklist Security
+            ctx.fillStyle = '#14532d';
+            ctx.fillRect(mX - 14, mY - 34, 22, 14);
+            ctx.fillStyle = '#4ade80';
+            ctx.fillRect(mX - 12, mY - 31, 3, 2);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(mX - 7, mY - 31, 12, 2);
+            ctx.fillStyle = '#4ade80';
+            ctx.fillRect(mX - 12, mY - 26, 3, 2);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(mX - 7, mY - 26, 10, 2);
+
+            // Right screen: Circular Radar Sweep
+            ctx.fillStyle = '#064e3b';
+            ctx.fillRect(mX + 15, mY - 34, 22, 14);
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(mX + 26, mY - 27, 5, 0, Math.PI * 2);
+            ctx.stroke();
+            const rAngle = (tick * 0.12) % (Math.PI * 2);
+            ctx.beginPath();
+            ctx.moveTo(mX + 26, mY - 27);
+            ctx.lineTo(mX + 26 + Math.cos(rAngle) * 5, mY - 27 + Math.sin(rAngle) * 5);
+            ctx.stroke();
+          } else {
+            // Default/Thinking
+            ctx.fillStyle = st.screenColor;
+            ctx.fillRect(mX - 14, mY - 34, 22, 14);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(mX + 15, mY - 34, 22, 14);
           }
         } else {
           ctx.fillStyle = '#020617';
@@ -1236,52 +1479,173 @@
       drawGlassWall(17.5, 12.0, 0.25, 4.0, 1.6); // Dinding kiri bawah
       drawDoorFrame(17.5, 10.5, '[GAME LOUNGE]', '#a855f7'); // Pintu masuk lounge
 
-      // 1. MEJA BILLIARD PROPORSIONAL (BOLA-BOLA BILIAR BERSIH)
-      const bilX = 18.6;
+      // ======================================================================
+      // 1. MEJA BILLIARD MEWAH & RAPI (HIGH-DETAIL RETRO PIXEL ART)
+      // ======================================================================
+      const bilX = 18.5;
       const bilY = 11.2;
-      drawBox(bilX, bilY, 2.8, 1.8, 0.85, '#15803d', '#451a03', '#78350f');
+      const bW = Math.round(3.0 * TILE_W);
+      const bL = Math.round(1.9 * TILE_H);
       const bp = toScreen(bilX, bilY, 0.85);
-      const bW = Math.round(2.8 * TILE_W);
-      const bL = Math.round(1.8 * TILE_H);
-      // Green Felt
-      ctx.fillStyle = '#16a34a';
-      ctx.fillRect(bp.x + 6, bp.y - bL + 6, bW - 12, bL - 12);
 
-      // 6 Billiard Pockets (Lubang Hitam di 4 Sudut & 2 Tengah)
-      ctx.fillStyle = '#0f172a';
-      const pockets = [
-        { x: bp.x + 8, y: bp.y - bL + 8 },
-        { x: bp.x + bW / 2, y: bp.y - bL + 8 },
-        { x: bp.x + bW - 8, y: bp.y - bL + 8 },
-        { x: bp.x + 8, y: bp.y - 8 },
-        { x: bp.x + bW / 2, y: bp.y - 8 },
-        { x: bp.x + bW - 8, y: bp.y - 8 },
+      // Bayangan Meja di Lantai (Floor Shadow)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
+      ctx.fillRect(bp.x + 4, bp.y + 4, bW - 8, 12);
+
+      // 4 Kaki Kayu Jati Berukir dengan Aksen Emas (Turned Wooden Legs & Brass Base)
+      const legs = [
+        { x: bp.x + 8, y: bp.y - 12 },
+        { x: bp.x + bW - 20, y: bp.y - 12 },
+        { x: bp.x + 10, y: bp.y - bL + 12 },
+        { x: bp.x + bW - 22, y: bp.y - bL + 12 }
       ];
-      pockets.forEach(pkt => {
+      legs.forEach(leg => {
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(leg.x, leg.y, 11, 16);
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(leg.x + 2, leg.y, 3, 16);
+        ctx.fillStyle = '#fbbf24'; // Brass leveling foot
+        ctx.fillRect(leg.x + 1, leg.y + 13, 9, 3);
+      });
+
+      // Bodi Kayu Mahoni Utama (Apron & Side Frame)
+      drawBox(bilX, bilY, 3.0, 1.9, 0.85, '#78350f', '#451a03', '#92400e');
+
+      // Rel Kayu Atas dengan Bevel Halus (Top Cushion Rail Bevel)
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(bp.x + 2, bp.y - bL + 2, bW - 4, bL - 4);
+      ctx.strokeStyle = '#451a03';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bp.x + 2, bp.y - bL + 2, bW - 4, bL - 4);
+
+      // Karet Bumper Pinggir (Inner Rubber Cushion - Deep Emerald)
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(bp.x + 7, bp.y - bL + 7, bW - 14, bL - 14);
+
+      // Karpet Laken Turnamen (Rich Emerald Green Felt Baize)
+      ctx.fillStyle = '#059669';
+      ctx.fillRect(bp.x + 9, bp.y - bL + 9, bW - 18, bL - 18);
+
+      // Efek Kedalaman Bayangan Bantalan Karpet (Cushion Depth Shadow)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
+      ctx.fillRect(bp.x + 9, bp.y - bL + 9, bW - 18, 4);
+      ctx.fillRect(bp.x + 9, bp.y - bL + 9, 4, bL - 18);
+
+      // Garis String Lapangan Biliar (Head String / Baize Line)
+      const headX = bp.x + Math.round(bW * 0.68);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(headX, bp.y - bL + 10);
+      ctx.lineTo(headX, bp.y - 10);
+      ctx.stroke();
+
+      // Diamond Sights (Titik Mutiara Inlaid di Rel Kayu)
+      ctx.fillStyle = '#f8fafc';
+      const sights = [
+        { x: bp.x + bW * 0.28, y: bp.y - bL + 4 },
+        { x: bp.x + bW * 0.50, y: bp.y - bL + 4 },
+        { x: bp.x + bW * 0.72, y: bp.y - bL + 4 },
+        { x: bp.x + bW * 0.28, y: bp.y - 4 },
+        { x: bp.x + bW * 0.50, y: bp.y - 4 },
+        { x: bp.x + bW * 0.72, y: bp.y - 4 },
+        { x: bp.x + 4, y: bp.y - bL * 0.65 },
+        { x: bp.x + 4, y: bp.y - bL * 0.35 },
+        { x: bp.x + bW - 4, y: bp.y - bL * 0.65 },
+        { x: bp.x + bW - 4, y: bp.y - bL * 0.35 },
+      ];
+      sights.forEach(s => {
+        ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - 1, 2, 2);
+      });
+
+      // 6 Lubang Kantong Biliar Otentik dengan Plat Kuningan (Drop Pockets & Brass Trim)
+      const pocketCoords = [
+        { x: bp.x + 9, y: bp.y - bL + 9 },
+        { x: bp.x + Math.round(bW / 2), y: bp.y - bL + 7 },
+        { x: bp.x + bW - 9, y: bp.y - bL + 9 },
+        { x: bp.x + 9, y: bp.y - 9 },
+        { x: bp.x + Math.round(bW / 2), y: bp.y - 7 },
+        { x: bp.x + bW - 9, y: bp.y - 9 },
+      ];
+      pocketCoords.forEach(pkt => {
+        // Plat Sudut Kuningan Emas
+        ctx.fillStyle = '#fbbf24';
         ctx.beginPath();
-        ctx.arc(pkt.x, pkt.y, 3.5, 0, Math.PI * 2);
+        ctx.arc(pkt.x, pkt.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lubang Kulit Dalam Hitam
+        ctx.fillStyle = '#020617';
+        ctx.beginPath();
+        ctx.arc(pkt.x, pkt.y, 3.2, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Bola-Bola Biliar Warna-Warni & Bola Putih (Tanpa Garis Stik)
-      const balls = [
-        { x: bp.x + bW * 0.72, y: bp.y - bL * 0.50, c: '#ffffff' }, // White Cue Ball
-        { x: bp.x + bW * 0.40, y: bp.y - bL * 0.50, c: '#ef4444' }, // Red Ball
-        { x: bp.x + bW * 0.35, y: bp.y - bL * 0.44, c: '#eab308' }, // Yellow Ball
-        { x: bp.x + bW * 0.35, y: bp.y - bL * 0.56, c: '#3b82f6' }, // Blue Ball
-        { x: bp.x + bW * 0.30, y: bp.y - bL * 0.38, c: '#a855f7' }, // Purple Ball
-        { x: bp.x + bW * 0.30, y: bp.y - bL * 0.50, c: '#0f172a' }, // 8-Ball
-        { x: bp.x + bW * 0.30, y: bp.y - bL * 0.62, c: '#f97316' }, // Orange Ball
+      // Kumpulan Piramida Segitiga Bola Biliar (10-Ball Triangular Rack)
+      const rackCenterX = bp.x + Math.round(bW * 0.34);
+      const rackCenterY = bp.y - Math.round(bL * 0.50);
+
+      const rackBalls = [
+        { ox: 0,   oy: 0,    c: '#ef4444' }, // 1 (Merah Apex)
+        { ox: -7,  oy: -4,   c: '#facc15' }, // 2 (Kuning)
+        { ox: -7,  oy: 4,    c: '#3b82f6' }, // 3 (Biru)
+        { ox: -14, oy: -8,   c: '#f97316' }, // 4 (Oranye)
+        { ox: -14, oy: 0,    c: '#020617' }, // 8-Ball Hitam di Tengah!
+        { ox: -14, oy: 8,    c: '#a855f7' }, // 6 (Ungu)
+        { ox: -21, oy: -12,  c: '#10b981' }, // 7 (Hijau)
+        { ox: -21, oy: -4,   c: '#b91c1c' }, // 8 (Maroon)
+        { ox: -21, oy: 4,    c: '#0284c7' }, // 9 (Cyan)
+        { ox: -21, oy: 12,   c: '#fbbf24' }, // 10 (Strip Emas)
       ];
-      balls.forEach(b => {
+
+      rackBalls.forEach(b => {
+        const bx = rackCenterX + b.ox;
+        const by = rackCenterY + b.oy;
+
+        // Bayangan Bola
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.arc(bx + 1, by + 1, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Warna Dasar Bola
         ctx.fillStyle = b.c;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 3.0, 0, Math.PI * 2);
+        ctx.arc(bx, by, 3.0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+
+        // Kilatan Cahaya 3D Specular Highlight (Titik Putih di Kiri-Atas)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(bx - 1.5, by - 1.5, 1.2, 1.2);
       });
+
+      // Bola Putih (Cue Ball) di Atas Garis String
+      const cueX = bp.x + Math.round(bW * 0.72);
+      const cueY = bp.y - Math.round(bL * 0.48);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.beginPath();
+      ctx.arc(cueX + 1, cueY + 1, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cueX, cueY, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      // Highlight bola putih
+      ctx.fillStyle = '#67e8f9';
+      ctx.fillRect(cueX - 1.2, cueY - 1.2, 1.2, 1.2);
+
+      // Stik Biliar Kayu Mewah (Cue Stick) di Rel Sisi Bawah
+      ctx.fillStyle = '#d97706'; // Kayu Ash Tapered
+      ctx.fillRect(bp.x + 18, bp.y - 2, bW - 36, 2);
+      ctx.fillStyle = '#1e293b'; // Grip Kulit Hitam
+      ctx.fillRect(bp.x + 18, bp.y - 2, 20, 2);
+      ctx.fillStyle = '#38bdf8'; // Ujung Kapur Biru (Chalked Tip)
+      ctx.fillRect(bp.x + bW - 20, bp.y - 2, 2, 2);
       // 2. PLAYSTATION SETUP PROPORSIONAL
       const tvX = 24.0;
       const tvY = 9.5;
@@ -1430,20 +1794,12 @@
       let rightArmOff = 0;
 
       if (isWalking) {
-        const f = agent.walkFrame;
-        if (f === 1) {
-          bob = 1;
-          leftFootOff = 5;
-          rightFootOff = -4;
-          leftArmOff = -4;
-          rightArmOff = 5;
-        } else if (f === 3) {
-          bob = 1;
-          leftFootOff = -4;
-          rightFootOff = 5;
-          leftArmOff = 5;
-          rightArmOff = -4;
-        }
+        const swing = Math.sin(agent.stepDist * 16);
+        leftFootOff = Math.round(swing * 3.5);
+        rightFootOff = Math.round(-swing * 3.5);
+        leftArmOff = Math.round(-swing * 3.5);
+        rightArmOff = Math.round(swing * 3.5);
+        bob = (Math.abs(swing) > 0.6) ? 1 : 0;
       } else if (isWorking) {
         bob = (Math.floor(tick / 10) % 2 === 0) ? 1 : 0; // Typing rhythm
       } else if (isSitting) {
@@ -1624,13 +1980,16 @@
         ctx.fillRect(14, -28 + sitDrop - bob, 3, 3);
       }
 
-      // Name Tag Above Agent (scales with zoom, transparent bg)
+      // Name Tag Above Agent
       drawAgentNameBadge(agent.name, agent.color, 12, -48 + sitDrop - bob);
 
-      // Emote Bubble
-      const bubbleEmote = isWorking ? '💻' : agent.bubble;
-      drawEmoteBubble(12, -68 + sitDrop - bob, bubbleEmote, tick);
-
+      // Dynamic Action Badge or Roam Emote Bubble
+      if (agent.currentAction && agent.currentAction !== 'idle') {
+        drawActionBadge(agent.currentAction, 12, -66 + sitDrop - bob, tick);
+      } else {
+        const bubbleEmote = isWorking ? '💻' : agent.bubble;
+        drawEmoteBubble(12, -68 + sitDrop - bob, bubbleEmote, tick);
+      }
       ctx.restore();
     }
 
@@ -1649,6 +2008,37 @@
       // Bright agent color text
       ctx.fillStyle = color;
       ctx.fillText(name, x, y);
+
+      ctx.restore();
+    }
+    // Dynamic Action Badge for Tool Calls (Reading, Coding, Terminal, Auditing, Thinking)
+    function drawActionBadge(action, x, y, tick) {
+      ctx.save();
+      const floatY = y + Math.sin(tick * 0.12) * 1.5;
+
+      const actionMeta = {
+        reading:  { label: '📖 READ',  border: '#38bdf8', bg: 'rgba(8, 47, 73, 0.9)' },
+        coding:   { label: '💻 CODE',  border: '#fb923c', bg: 'rgba(124, 45, 18, 0.9)' },
+        terminal: { label: '⚙️ BASH',  border: '#4ade80', bg: 'rgba(20, 83, 45, 0.9)' },
+        auditing: { label: '🛡️ AUDIT', border: '#facc15', bg: 'rgba(113, 63, 18, 0.9)' },
+        thinking: { label: '💭 PLAN',  border: '#c084fc', bg: 'rgba(88, 28, 135, 0.9)' },
+      };
+
+      const meta = actionMeta[action] || { label: action.toUpperCase(), border: '#38ef7d', bg: 'rgba(10, 16, 28, 0.9)' };
+
+      ctx.fillStyle = meta.bg;
+      ctx.strokeStyle = meta.border;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(x - 24, floatY - 9, 48, 16, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 7px "Press Start 2P", monospace';
+      ctx.fillStyle = meta.border;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(meta.label, x, floatY + 0.5);
 
       ctx.restore();
     }
@@ -1700,27 +2090,39 @@
 
       ctx.save();
       ctx.scale(dpr, dpr);
-      ctx.translate(panX, panY);
+      ctx.translate(Math.round(panX), Math.round(panY));
       ctx.scale(zoom, zoom);
-
+      ctx.imageSmoothingEnabled = false;
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.msImageSmoothingEnabled = false;
       // 1. Draw 2.5D Office Floor, Walls, Decor & Furniture
       drawOfficeWorld(tick);
 
       // 2. Update Agent Movements (Navigasi Lewat Pintu & Waypoints)
       Object.values(agentSprites).forEach(agent => {
-        if (agent.state !== 'working') {
+        if (!agent.runtimeBusy) {
           if (tick >= agent.nextRoamTick) {
             const dice = Math.random();
-            if (dice < 0.30) {
+            // 60% chance to remain still / space out where they are
+            if (dice < 0.60) {
+              agent.nextRoamTick = tick + 1800 + Math.floor(Math.random() * 2400); // 30-70 seconds
+              if (Math.random() < 0.25) {
+                const idleEmotes = ['...', '💭', '☕', '✨'];
+                agent.bubble = idleEmotes[Math.floor(Math.random() * idleEmotes.length)];
+              }
+            } else if (dice < 0.80) {
               setAgentDestination(agent, agent.deskGx, agent.deskGy, 0, '💻');
-            } else if (dice < 0.55) {
+              agent.nextRoamTick = tick + 2400 + Math.floor(Math.random() * 2400); // 40-80 seconds
+            } else if (dice < 0.90) {
               const bedSpot = (Math.random() < 0.5) ? BUNK_BED_BOTTOM : BUNK_BED_TOP;
               setAgentDestination(agent, bedSpot.gx, bedSpot.gy, bedSpot.gz || 0, '💤');
+              agent.nextRoamTick = tick + 3000 + Math.floor(Math.random() * 3000); // 50-100 seconds
             } else {
               const spot = roamSpots[Math.floor(Math.random() * roamSpots.length)];
               setAgentDestination(agent, spot.gx, spot.gy, spot.gz || 0, spot.bubble);
+              agent.nextRoamTick = tick + 2400 + Math.floor(Math.random() * 2400); // 40-80 seconds
             }
-            agent.nextRoamTick = tick + 420 + Math.floor(Math.random() * 450);
             updatePillPreview();
           }
         }
@@ -1761,7 +2163,7 @@
           const isAtBed = Math.abs(agent.gx - BUNK_BED_BOTTOM.gx) < 0.5 && Math.abs(agent.gy - BUNK_BED_BOTTOM.gy) < 0.5;
 
           if (isAtDesk) {
-            agent.state = (agent.currentTask) ? 'working' : 'idle';
+            agent.state = agent.runtimeBusy ? 'working' : 'idle';
             agent.bubble = '💻';
           } else if (isAtBed) {
             agent.state = 'sleeping';
@@ -1790,115 +2192,469 @@
     const dockEl = document.getElementById('commandDock');
 
     function toggleDock(open) {
-      if (open) {
-        dockEl.classList.add('open');
-      } else {
-        dockEl.classList.remove('open');
-      }
+      const isOpen = typeof open === 'boolean' ? open : !dockEl.classList.contains('open');
+      dockEl.classList.toggle('open', isOpen);
+      const pill = dockEl.querySelector('.dock-pill');
+      pill.setAttribute('aria-expanded', String(isOpen));
+      if (isOpen) document.getElementById('taskInput').focus();
+      else pill.focus();
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') toggleDock(false);
+      if (e.key === 'Escape' && !e.repeat && !e.isComposing && !e.defaultPrevented) {
+        e.preventDefault();
+        if (!document.getElementById('sessionReset').hidden) hideSessionReset();
+        else toggleDock();
+      }
     });
 
     function updatePillPreview() {
-      const p = document.getElementById('pillPreview');
-      if (!p) return;
-      const statusArr = [];
-      for (const a of Object.values(agentSprites)) {
-        const stateText = a.state === 'working' ? 'Coding' : (a.state === 'sleeping' ? 'Tidur' : 'Santai');
-        statusArr.push('<span>● ' + a.name + ': ' + stateText + '</span>');
+      const preview = document.getElementById('pillPreview');
+      preview.replaceChildren();
+      for (const sprite of Object.values(agentSprites)) {
+        const label = document.createElement('span');
+        label.textContent = sprite.name + ': ' + (sprite.runtimeStatus || 'idle');
+        preview.appendChild(label);
       }
-      p.innerHTML = statusArr.join('');
     }
 
     function selectAgent(id) {
       selectedAgent = id;
-      document.querySelectorAll('.agent-tab-item').forEach(el => el.classList.remove('active'));
-      const activeEl = document.getElementById('tab-' + id);
-      if (activeEl) activeEl.classList.add('active');
+      document.querySelectorAll('.agent-tab-item').forEach(el => {
+        const active = el.id === 'tab-' + id;
+        el.classList.toggle('active', active);
+        el.setAttribute('aria-pressed', String(active));
+      });
+      document.getElementById('targetHint').textContent = id === 'leada'
+        ? 'Target: lead OMP. Delegasi ditentukan oleh runtime.'
+        : 'Target: ' + id.toUpperCase() + '. Arahkan subagent aktif yang dipetakan; jika tidak ada, minta lead. Perintah / tetap ke lead.';
     }
 
-    function setPrompt(text) {
-      document.getElementById('taskInput').value = text;
-    }
+    document.querySelectorAll('.agent-tab-item').forEach(tab => {
+      tab.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          tab.click();
+        }
+      });
+    });
 
     function dispatchTask() {
       const input = document.getElementById('taskInput');
       const prompt = input.value.trim();
       if (!prompt) return;
-
-      ws.send(JSON.stringify({
+      const agentId = prompt.startsWith('/') ? 'leada' : selectedAgent;
+      if (!sendMessage({
         type: 'dispatch_task',
-        agentId: selectedAgent,
-        prompt: prompt
-      }));
-
+        agentId,
+        prompt,
+        streamingBehavior: document.getElementById('streamingBehavior').value
+      })) return;
+      appendLog('\n[DIKIRIM ke ' + agentId + '] ' + prompt + '\n', 'log-user');
       input.value = '';
     }
 
+    document.getElementById('taskInput').addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        dispatchTask();
+      }
+    });
+
     function appendLog(text, className) {
       const logs = document.getElementById('termLogs');
+      const selection = window.getSelection();
+      const selecting = selection && !selection.isCollapsed &&
+        (logs.contains(selection.anchorNode) || logs.contains(selection.focusNode));
+      const follow = !selecting && logs.scrollHeight - logs.scrollTop - logs.clientHeight < 24;
       const span = document.createElement('span');
       span.className = className;
       span.textContent = text;
       logs.appendChild(span);
-      logs.scrollTop = logs.scrollHeight;
+      if (follow) logs.scrollTop = logs.scrollHeight;
     }
 
     function clearLogs() {
-      document.getElementById('termLogs').innerHTML = '';
+      document.getElementById('termLogs').replaceChildren();
     }
 
-    // WebSocket Integration
-    const ws = new WebSocket('ws://' + window.location.host + '/ws');
+    async function copyLogs() {
+      const logs = document.getElementById('termLogs');
+      const btn = document.getElementById('btnCopyLogs');
+      const text = logs.innerText || logs.textContent;
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch {
+        // HTTP LAN origins may not expose the Clipboard API.
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.style.cssText = 'position:fixed;left:-9999px;top:0';
+        document.body.appendChild(input);
+        const focused = document.activeElement;
+        input.select();
+        try {
+          copied = document.execCommand('copy');
+        } finally {
+          input.remove();
+          focused?.focus({ preventScroll: true });
+        }
+      }
+      if (!copied) {
+        logs.focus();
+        const range = document.createRange();
+        range.selectNodeContents(logs);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      btn.textContent = copied ? 'COPIED' : 'TEKAN CTRL+C';
+      setTimeout(() => { btn.textContent = 'COPY LOGS'; }, 2000);
+    }
 
-    ws.onopen = () => {
-      appendLog('[CCTV] WebSocket terhubung ke Bun CCTV Office Engine.', 'log-sys');
+    let ws;
+    let connected = false;
+    let sessionState = { ready: false, busy: false };
+    let reconnectDelay = 1000;
+    const pendingDialogs = new Map();
+
+    function sendMessage(message) {
+      if (!connected || ws?.readyState !== WebSocket.OPEN) {
+        appendLog('\n[KONEKSI] Belum terhubung. Pesan belum dikirim; draft tetap tersedia.\n', 'log-stderr');
+        return false;
+      }
+      try {
+        ws.send(JSON.stringify(message));
+        return true;
+      } catch (error) {
+        appendLog('\n[KIRIM GAGAL] ' + error.message + '\n', 'log-stderr');
+        return false;
+      }
+    }
+
+    function renderSessionState() {
+      const connectionText = connected ? 'Server terhubung' : 'Koneksi putus; mencoba terhubung kembali. Draft tidak dikirim otomatis.';
+      document.getElementById('connectionStatus').textContent = connectionText;
+      const stateText = sessionState.error ? 'Error: ' + sessionState.error
+        : sessionState.busy ? 'OMP sedang bekerja' : sessionState.ready ? 'OMP siap' : 'OMP belum siap; kirim pesan untuk memulai';
+      const model = typeof sessionState.model === 'object' && sessionState.model
+        ? [sessionState.model.provider, sessionState.model.id].filter(Boolean).join('/') : sessionState.model;
+      document.getElementById('sessionStatus').textContent = [
+        stateText, sessionState.sessionId && 'Sesi: ' + sessionState.sessionId,
+        sessionState.cwd && 'CWD: ' + sessionState.cwd, model && 'Model: ' + model,
+        sessionState.thinkingLevel && 'Thinking: ' + sessionState.thinkingLevel
+      ].filter(Boolean).join('\n');
+      document.getElementById('statusHeader').textContent = connected ? stateText : 'OMP: koneksi putus';
+      document.querySelector('.rec-dot').style.background = connected ? '#38ef7d' : '#94a3b8';
+      document.getElementById('btnDispatch').disabled = !connected;
+      document.getElementById('btnAbort').disabled = !connected || !sessionState.ready || !sessionState.busy;
+      document.getElementById('btnCommands').disabled = !connected;
+      document.getElementById('btnNewSession').disabled = !connected || sessionState.busy;
+      document.getElementById('btnConfirmReset').disabled = !connected || sessionState.busy;
+      document.querySelectorAll('#ompDialogs button, #ompDialogs input, #ompDialogs textarea').forEach(el => {
+        el.disabled = !connected;
+      });
+    }
+
+    function hideSessionReset() {
+      document.getElementById('sessionReset').hidden = true;
+      document.getElementById('btnNewSession').focus();
+    }
+
+    document.getElementById('btnAbort').onclick = () => {
+      if (sendMessage({ type: 'omp_abort' })) appendLog('\n[OMP] Permintaan stop dikirim; menunggu runtime.\n', 'log-sys');
     };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'sync_state') {
-        Object.values(data.agents).forEach(a => updateAgentStatus(a.id, a.status, a.task));
-      } else if (data.type === 'agent_status') {
-        updateAgentStatus(data.agentId, data.status, data.task);
-      } else if (data.type === 'log') {
-        const streamClass = 'log-' + (data.stream || 'stdout');
-        appendLog(data.text, streamClass);
+    document.getElementById('btnCommands').onclick = () => {
+      sendMessage({ type: 'omp_command', command: { type: 'get_available_commands' } });
+    };
+    document.getElementById('btnNewSession').onclick = () => {
+      if (!connected || sessionState.busy) return;
+      document.getElementById('sessionReset').hidden = false;
+      document.getElementById('btnConfirmReset').focus();
+    };
+    document.getElementById('btnCancelReset').onclick = hideSessionReset;
+    document.getElementById('btnConfirmReset').onclick = () => {
+      if (sessionState.busy || !connected) return;
+      if (sendMessage({ type: 'omp_command', command: { type: 'new_session' } })) {
+        hideSessionReset();
+        appendLog('\n[OMP] Sesi baru diminta. Menunggu konfirmasi runtime.\n', 'log-sys');
       }
     };
+
+    function closeDialog(id) {
+      const card = pendingDialogs.get(id);
+      if (!card) return;
+      const hadFocus = card.contains(document.activeElement);
+      card.remove();
+      pendingDialogs.delete(id);
+      if (hadFocus) document.getElementById('taskInput').focus();
+    }
+
+    function renderOmpDialog(request) {
+      if (!request || typeof request.method !== 'string') return;
+      if (request.method === 'cancel') {
+        closeDialog(request.targetId);
+        return;
+      }
+      if (!['select', 'confirm', 'input', 'editor', 'ask'].includes(request.method)) {
+        const text = request.message ?? request.text ?? request.statusText ?? request.title ?? request.url ?? request.widgetLines;
+        appendLog('\n[OMP ' + request.method + '] ' + (typeof text === 'string' ? text : JSON.stringify(request)) + '\n', 'log-sys');
+        return;
+      }
+      if (typeof request.id !== 'string' || pendingDialogs.has(request.id)) return;
+      const card = document.createElement('form');
+      card.className = 'omp-dialog';
+      card.dataset.requestId = request.id;
+      card.dataset.method = request.method;
+      const heading = document.createElement('h3');
+      heading.id = 'omp-question-' + request.id;
+      heading.textContent = request.title || 'Pertanyaan OMP';
+      card.setAttribute('aria-labelledby', heading.id);
+      card.appendChild(heading);
+      if (request.message) {
+        const message = document.createElement('p');
+        message.textContent = request.message;
+        card.appendChild(message);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'runtime-controls';
+      const respond = answer => {
+        if (!sendMessage({ type: 'omp_ui_response', response: { type: 'extension_ui_response', id: request.id, ...answer } })) return;
+        appendLog('\n[OMP UI ' + request.id + '] Jawaban dikirim: ' + JSON.stringify(answer) + '\n', 'log-user');
+        closeDialog(request.id);
+      };
+      const button = (label, callback, parent = actions) => {
+        const element = document.createElement('button');
+        element.type = 'button';
+        element.textContent = label;
+        element.onclick = callback;
+        parent.appendChild(element);
+        return element;
+      };
+      let submit;
+      if (request.method === 'confirm') {
+        button('Ya, lanjutkan', () => respond({ confirmed: true }));
+        button('Tidak', () => respond({ confirmed: false }));
+      } else if (request.method === 'select') {
+        (request.options || []).forEach((option, index) => {
+          const choice = button(option, () => respond({ value: option }), card);
+          choice.className = 'omp-option';
+          const description = request.optionDetails?.[index]?.description;
+          if (description) {
+            const detail = document.createElement('small');
+            detail.textContent = description;
+            choice.appendChild(detail);
+          }
+        });
+      } else if (request.method === 'ask') {
+        const questions = (request.questions || []).map((question, questionIndex) => {
+          const group = document.createElement('fieldset');
+          const legend = document.createElement('legend');
+          legend.textContent = [question.header, question.question].filter(Boolean).join(': ');
+          group.appendChild(legend);
+          const inputs = question.options.map((option, index) => {
+            const label = document.createElement('label');
+            label.className = 'omp-option';
+            const input = document.createElement('input');
+            input.type = question.multi ? 'checkbox' : 'radio';
+            input.name = request.id + '-' + questionIndex;
+            input.value = option.label;
+            const text = document.createElement('span');
+            text.textContent = option.label + (question.recommended === index ? ' (rekomendasi OMP)' : '');
+            for (const detail of [option.description, option.preview]) {
+              if (!detail) continue;
+              const description = document.createElement('small');
+              description.textContent = detail;
+              text.appendChild(description);
+            }
+            label.append(input, text);
+            group.appendChild(label);
+            return input;
+          });
+          const customLabel = document.createElement('label');
+          customLabel.textContent = 'Jawaban lain';
+          const custom = document.createElement('input');
+          custom.type = 'text';
+          custom.name = 'custom-' + questionIndex;
+          customLabel.appendChild(custom);
+          group.appendChild(customLabel);
+          custom.oninput = () => {
+            if (!question.multi && custom.value.trim()) inputs.forEach(input => { input.checked = false; });
+          };
+          inputs.forEach(input => {
+            input.onchange = () => { if (!question.multi && input.checked) custom.value = ''; };
+          });
+          card.appendChild(group);
+          return { question, inputs, custom };
+        });
+        submit = () => {
+          const answers = questions.map(({ question, inputs, custom }) => {
+            const answer = { id: question.id, selectedOptions: [...new Set(inputs.filter(input => input.checked).map(input => input.value))] };
+            if (custom.value.trim()) answer.customInput = custom.value.trim();
+            return answer;
+          });
+          const missing = questions.findIndex(({ question }, index) =>
+            !question.multi && !answers[index].selectedOptions.length && !answers[index].customInput);
+          if (missing !== -1) {
+            questions[missing].custom.setCustomValidity('Pilih opsi atau tulis jawaban.');
+            questions[missing].custom.reportValidity();
+            questions[missing].custom.setCustomValidity('');
+            return;
+          }
+          respond({ answers });
+        };
+      } else {
+        const label = document.createElement('label');
+        label.textContent = request.method === 'editor' ? 'Jawaban / teks editor' : 'Jawaban';
+        const input = document.createElement(request.method === 'editor' ? 'textarea' : 'input');
+        if (request.method === 'input') input.type = 'text';
+        input.name = 'value';
+        input.placeholder = request.placeholder || '';
+        input.value = request.method === 'editor' ? (request.prefill || '') : '';
+        label.appendChild(input);
+        card.appendChild(label);
+        submit = () => respond({ value: input.value });
+      }
+      if (submit) {
+        const send = button('Kirim jawaban', null);
+        send.type = 'submit';
+      }
+      const cancel = () => respond({ cancelled: true });
+      button('Batal', cancel);
+      card.onsubmit = event => { event.preventDefault(); submit?.(); };
+      card.onkeydown = event => {
+        if (event.key === 'Escape' && !event.isComposing) {
+          event.preventDefault();
+          event.stopPropagation();
+          cancel();
+        }
+      };
+      card.appendChild(actions);
+      pendingDialogs.set(request.id, card);
+      document.getElementById('ompDialogs').appendChild(card);
+      toggleDock(true);
+      card.querySelector('input, textarea, button')?.focus();
+      renderSessionState();
+    }
 
     function updateAgentStatus(agentId, status, task) {
-      const tabStatus = document.getElementById('tabStatus-' + agentId);
       const sprite = agentSprites[agentId];
       if (!sprite) return;
-
-      if (status === 'working') {
-        if (tabStatus) {
-          tabStatus.textContent = 'WORKING';
-          tabStatus.style.color = '#fbbf24';
-        }
-        setAgentDestination(sprite, sprite.deskGx, sprite.deskGy, 0, '💻');
-        document.getElementById('statusHeader').textContent = 'CCTV LIVE: ' + agentId.toUpperCase() + ' SEDANG MENGERJAKAN TUGAS';
-      } else if (status === 'completed') {
-        if (tabStatus) {
-          tabStatus.textContent = (agentId === 'leada') ? 'APPROVED 🏆' : 'DONE ✅';
-          tabStatus.style.color = '#22c55e';
-        }
-        sprite.bubble = '✅';
-        document.getElementById('statusHeader').textContent = 'CCTV LIVE: ' + agentId.toUpperCase() + ' SELESAI & TERVERIFIKASI';
-      } else {
-        if (tabStatus) {
-          tabStatus.textContent = 'IDLE';
-          tabStatus.style.color = '#94a3b8';
-        }
-        sprite.nextRoamTick = tick + 60;
-        sprite.bubble = '💬';
-        document.getElementById('statusHeader').textContent = 'STATUS: 4 AGENTS ROAMING & CODING';
+      const wasBusy = sprite.runtimeBusy;
+      sprite.runtimeStatus = status || 'idle';
+      sprite.runtimeBusy = ['working', 'running', 'busy', 'waiting'].includes(status);
+      sprite.currentTask = sprite.runtimeBusy ? (task || '') : null;
+      if (sprite.runtimeBusy && !wasBusy) {
+        setAgentDestination(sprite, sprite.deskGx, sprite.deskGy, 0, '');
+      } else if (!sprite.runtimeBusy) {
+        sprite.currentAction = 'idle';
+        sprite.actionDetail = '';
+        sprite.state = 'idle';
+        sprite.nextRoamTick = tick + 1800;
+        sprite.bubble = '';
       }
+      const label = document.getElementById('tabStatus-' + agentId);
+      label.textContent = sprite.runtimeStatus.toUpperCase();
+      label.title = task || '';
+      label.style.color = sprite.runtimeBusy ? '#fbbf24' : '#cbd5e1';
       updatePillPreview();
     }
+
+    function updateAgentAction(agentId, action, detail) {
+      const sprite = agentSprites[agentId];
+      if (!sprite) return;
+      sprite.currentAction = action || 'idle';
+      sprite.actionDetail = detail || '';
+      const label = document.getElementById('tabStatus-' + agentId);
+      label.textContent = (sprite.runtimeStatus || 'idle').toUpperCase() +
+        (action && action !== 'idle' ? ' / ' + action : '');
+      label.title = detail || sprite.currentTask || '';
+      if (action && action !== 'idle') {
+        document.getElementById('runtimeAction').textContent = 'Aktivitas terakhir: ' + agentId + ' / ' + action + (detail ? ': ' + detail : '');
+      }
+    }
+
+    function handleOfficeMessage(data) {
+      if (data.type === 'sync_state') {
+        clearLogs();
+        for (const id of pendingDialogs.keys()) closeDialog(id);
+        Object.values(data.agents || {}).forEach(agent => {
+          updateAgentStatus(agent.id, agent.status, agent.task);
+          updateAgentAction(agent.id, agent.action, agent.detail);
+        });
+      } else if (data.type === 'agent_status') {
+        updateAgentStatus(data.agentId, data.status, data.task);
+      } else if (data.type === 'agent_action') {
+        updateAgentAction(data.agentId, data.action, data.detail);
+      } else if (data.type === 'log') {
+        appendLog(data.text, 'log-' + (data.stream || 'stdout'));
+      } else if (data.type === 'omp_state') {
+        sessionState = { ready: false, busy: false, ...data };
+        document.getElementById('runtimeRoute').textContent = data.route || 'Belum ada rute runtime.';
+        renderSessionState();
+      } else if (data.type === 'omp_subagents') {
+        const list = document.getElementById('subagentList');
+        list.replaceChildren();
+        for (const agent of data.agents || []) {
+          const item = document.createElement('li');
+          item.textContent = [agent.id, agent.status, agent.visualRole && 'visual: ' + agent.visualRole,
+            agent.agent, agent.description, agent.task].filter(Boolean).join(' · ');
+          list.appendChild(item);
+        }
+        if (!list.childElementCount) {
+          const empty = document.createElement('li');
+          empty.textContent = 'Belum ada subagent.';
+          list.appendChild(empty);
+        }
+      } else if (data.type === 'omp_response') {
+        const response = data.response;
+        if (response?.success && response.command === 'get_available_commands') {
+          const commands = response.data?.commands || [];
+          appendLog('\n[PERINTAH OMP]\n' + (commands.length ? commands.map(command =>
+            '/' + command.name + (command.input?.hint ? ' ' + command.input.hint : '') +
+            (command.description ? ': ' + command.description : '') +
+            (command.aliases?.length ? ' (alias: ' + command.aliases.join(', ') + ')' : '')
+          ).join('\n') : 'Runtime tidak mengembalikan perintah.') + '\n', 'log-sys');
+        } else if (response) {
+          appendLog('\n[OMP ' + response.command + '] ' + JSON.stringify(response) + '\n',
+            response.success ? 'log-sys' : 'log-stderr');
+        }
+      } else if (data.type === 'omp_ui') {
+        renderOmpDialog(data.request);
+      } else if (data.type === 'omp_ui_cancel') {
+        closeDialog(data.id);
+      }
+    }
+
+    function connectOffice() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(protocol + '//' + location.host + '/ws');
+      ws.onopen = () => {
+        connected = true;
+        reconnectDelay = 1000;
+        renderSessionState();
+      };
+      ws.onmessage = event => {
+        try {
+          handleOfficeMessage(JSON.parse(event.data));
+        } catch (error) {
+          appendLog('\n[PROTOKOL] ' + error.message + '\n', 'log-stderr');
+        }
+      };
+      ws.onerror = () => {
+        appendLog('\n[KONEKSI] WebSocket gagal. Periksa server dan koneksi.\n', 'log-stderr');
+      };
+      ws.onclose = () => {
+        connected = false;
+        renderSessionState();
+        setTimeout(connectOffice, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, 10000);
+      };
+    }
+
+    updatePillPreview();
+    connectOffice();
 
     // Top Clock
     setInterval(() => {

@@ -4,8 +4,9 @@
   "description": "2.5D Isometric Retro Pixel Art Virtual Office for Autonomous AI Agent Squad (Leada, Coder, Secu, Infras)",
   "main": "server.js",
   "scripts": {
-    "start": "bun run server.js",
-    "dev": "bun --watch server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test server.test.js omp-session.test.js"
   },
   "keywords": [
     "virtual-office",
@@ -16,5 +17,8 @@
     "cctv"
   ],
   "author": "Aripardhana",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
 }

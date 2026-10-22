@@ -55,30 +55,49 @@ Setiap agen berpindah ruangan dengan alur nyata: melangkah ke pintu bagian dalam
 
 ---
 
-## 🚀 Alur Delegasi Otomatis (Tech Lead Responsibility Engine)
-Ketika perintah diberikan kepada **`LEADA`**:
-1. **Perancangan:** `LEADA` menerima instruksi dan memecahnya ke masing-masing domain spesialis.
-2. **Infrastruktur (`INFRAS`):** Mempersiapkan container, status database, dan jaringan $\rightarrow$ `DONE ✅`.
-3. **Coding (`CODER`):** Menulis kode, endpoints, dan lulus unit test $\rightarrow$ `DONE ✅`.
-4. **Security (`SECU`):** Memindai kerentanan OWASP, otentikasi, dan sanitasi payload $\rightarrow$ `DONE ✅`.
-5. **Approval Akhir (`LEADA`):** `LEADA` memvalidasi seluruh deliverables tim dan secara resmi menyatakan tugas **`APPROVED 🏆`** tuntas!
+## 🚀 Integrasi Interaktif OMP Asli (Real Runtime & Dynamic Delegation)
+
+Sistem tidak lagi menggunakan pipeline hardcoded, timer buatan, atau laporan template simulasi. Backend sekarang terhubung langsung ke sesi runtime **OMP (`omp --mode rpc-ui`)**:
+
+1. **Interaksi Fleksibel Terminal OMP:**
+   - Instruksi dikirim langsung ke agent loop OMP yang aktif.
+   - Mendukung perintah slash native (`/help`, `/model`, `/stats`, dll).
+   - Mendukung mode pengiriman saat agen sibuk (`steer` untuk interupsi dinamis atau `followUp` untuk antrean pesan berikutnya).
+   - Tombol `[■ STOP]` mengeksekusi `omp_abort` secara real-time.
+
+2. **Delegasi Subagent Nyata (Bukan Mock):**
+   - Event delegasi runtime (`subagent_lifecycle`, `subagent_progress`, `subagent_event`) diterjemahkan langsung ke visual kantor.
+   - Subagent yang didelegasikan oleh Lead dipetakan ke role visual agen (`CODER`, `SECU`, `INFRAS`) sesuai spesialisasi tugas riil.
+   - Mengarahkan prompt ke tab spesialis (misal Coder) akan mengarahkan subagent aktif yang relevan via `steer_subagent`, atau meminta Tech Lead mengoordinasikan tugas spesialis tersebut.
+
+3. **Dukungan Dialog Interaktif OMP (Ask / Confirm / Select / Editor):**
+   - Ketika agen membutuhkan input atau approval, form dialog OMP muncul secara interaktif di panel kantor dengan opsi jawaban, deskripsi, dan custom input.
+   - Respon user diteruskan langsung ke OMP sebagai `extension_ui_response`.
+
+## 🔍 Reaktivitas Tool Call OMP Real-Time
+Animasi agen dan monitor PC dual-screen bereaksi dinamis terhadap tool call yang sedang dieksekusi:
+* **`read` / `grep` / `glob` (Scanning):** Agen memegang tablet/dokumen, monitor menampilkan tree direktori dengan laser pemindai biru. Badge: `[📖 READ]`.
+* **`edit` / `write` (Coding):** Agen mengetik cepat, partikel kode berkilau naik dari keyboard, monitor menampilkan syntax highlighting multi-warna. Badge: `[💻 CODE]`.
+* **`bash` / `eval` (Terminal):** Monitor menampilkan konsol Matrix hijau dengan kursor berkedip cepat. Badge: `[⚙️ BASH]`.
+* **`audit` / `security` (Security Gate):** Monitor menampilkan sapuan radar hijau melingkar. Badge: `[🛡️ AUDIT]`.
+* **`plan` / `analyzing` (Thinking):** Balon pikiran perencanaan di atas kepala agen. Badge: `[💭 PLAN]`.
 
 ---
 
 ## 🛠️ Instalasi & Menjalankan
 
-### Kebutuhan:
-- [Bun](https://bun.sh/) (atau Node.js runtime)
+### Direktori Proyek:
+`E:\DOLANAN PROGRAM\PORTO\Virtual-Office-AI`
 
 ### Menjalankan Server:
+Bisa dijalankan dengan runtime **Bun** atau **Node.js** (tanpa dependency eksternal):
 ```bash
-# Masuk ke direktori
-cd /mnt/e/CODING/virtual-office-ai
-
-# Jalankan server
+# Opsi 1: Menggunakan Bun
 bun run server.js
-```
 
+# Opsi 2: Menggunakan Node.js
+node server.js
+```
 Buka browser di:
 👉 **`http://localhost:3333`**
 
@@ -86,4 +105,20 @@ Kontrol Kamera:
 - **Zoom In / Out:** Scroll roda mouse (0.25x – 3.5x)
 - **Geser Layar (Pan):** Klik kiri dan drag mouse (1:1 stabil)
 - **Reset Posisi:** Klik tombol `[⟲ RESET]` di pojok kanan atas atau klik ganda (*double click*) di kanvas
-- **Buka Command Dispatcher:** Klik `[▲ BUKA DISPATCHER]` di bagian bawah layar (atau tekan tombol `ESC` untuk menutup)
+- **Command Dispatcher:** Klik `[▲ BUKA DISPATCHER]` atau tekan `Esc` untuk membuka panel layar penuh. `Esc` menutup dan membuka kembali tanpa menghapus draft.
+- **Salin/tempel:** Blok teks terminal lalu `Ctrl+C`, atau klik `COPY LOGS` untuk seluruh output. Tempel ke kolom instruksi dengan `Ctrl+V`. Jika browser menolak penyalinan otomatis, tombol menampilkan `TEKAN CTRL+C` dan memilih log.
+- **Log baru:** Terminal mengikuti output hanya ketika posisi scroll berada di bawah dan tidak ada teks yang sedang diseleksi.
+- **Instruksi:** `Enter` mengirim; `Shift+Enter` membuat baris baru.
+- Setelah memperbarui file, restart server dari direktori proyek ini dan lakukan hard refresh (`Ctrl+Shift+R`) agar browser tidak memakai halaman lama.
+
+### Batas akses file HTTP
+
+Server hanya menyajikan `/`, `/index.html`, dan file di `/public/`. File proyek seperti `server.js` dan `package.json`, direktori, serta symlink yang mengarah ke luar direktori publik menghasilkan `404`. Path dengan encoding tidak valid menghasilkan `400`. Aset PNG dikirim sebagai `image/png`.
+
+Jalankan regresi HTTP dengan Node.js:
+
+```bash
+npm test
+```
+
+Pengujian menjalankan server pada port sementara dan memeriksa halaman utama, aset, file hilang, traversal path, serta symlink. Backend belum memiliki autentikasi dispatcher; jangan mengekspos port server ke internet tanpa pembatasan akses.
